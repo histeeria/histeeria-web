@@ -5,11 +5,7 @@ import { CommandCenter } from "@/components/dashboard/command-center";
 import { getDecisions, getDecisionStats } from "@/lib/api";
 import { getCurrentUserProfile, getSessionToken, requireSession } from "@/lib/server";
 
-interface PageProps {
-  params: Promise<{ workspace_slug: string }> | { workspace_slug: string };
-}
-
-export default async function WorkspaceDashboardPage({ params }: PageProps) {
+export default async function WorkspaceDashboardPage() {
   const session = await requireSession();
   if (!session) {
     redirect("/login");
@@ -21,19 +17,6 @@ export default async function WorkspaceDashboardPage({ params }: PageProps) {
     return (
       <ApiStatusBanner message="We couldn't reach the API. Check your connection and try again." />
     );
-  }
-
-  if (!profile.user.onboarded || !profile.organization?.workspace_slug) {
-    redirect("/onboarding");
-  }
-
-  // Await params if it's a promise (standard robust Next.js App Router practice)
-  const resolvedParams = params instanceof Promise ? await params : params;
-  const urlSlug = resolvedParams?.workspace_slug;
-
-  // Security & URL Sync: If the user visits the wrong workspace slug, redirect them to their actual workspace
-  if (urlSlug !== profile.organization.workspace_slug) {
-    redirect(`/${profile.organization.workspace_slug}/dashboard`);
   }
 
   const token = await getSessionToken();
