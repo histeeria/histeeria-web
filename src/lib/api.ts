@@ -113,6 +113,17 @@ export async function getMe(token: string) {
   return apiFetch<MeResponse>("/v1/auth/me", { token });
 }
 
+export type SlugCheckResponse = {
+  available: boolean;
+  slug: string;
+  reason: string | null;
+};
+
+export async function checkWorkspaceSlug(token: string, slug: string) {
+  const params = new URLSearchParams({ slug });
+  return apiFetch<SlugCheckResponse>(`/v1/onboarding/check-slug?${params.toString()}`, { token });
+}
+
 export async function completeOnboarding(token: string, payload: OnboardingPayload) {
   return apiFetch<OnboardingResponse>("/v1/onboarding", {
     method: "POST",
