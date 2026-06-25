@@ -14,7 +14,12 @@ export default async function AppLayout({ children }: { children: React.ReactNod
 
   return (
     <AuthProvider>
-      <AppShell workspaceName={profile?.organization?.workspace_name}>{children}</AppShell>
+      <AppShell
+        workspaceName={profile?.organization?.workspace_name}
+        workspaceSlug={profile?.organization?.workspace_slug}
+      >
+        {children}
+      </AppShell>
     </AuthProvider>
   );
 }

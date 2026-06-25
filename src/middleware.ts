@@ -6,7 +6,10 @@ const protectedRoutes = ["/dashboard", "/onboarding"];
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  const isProtected = protectedRoutes.some((route) => pathname.startsWith(route));
+  const isProtected =
+    protectedRoutes.some((route) => pathname.startsWith(route)) ||
+    pathname.endsWith("/dashboard") ||
+    pathname.includes("/dashboard/");
   const isLogin = pathname.startsWith("/login");
 
   const token = await getToken({
@@ -21,12 +24,12 @@ export async function middleware(request: NextRequest) {
   }
 
   if (isLogin && token) {
-    return NextResponse.redirect(new URL("/onboarding", request.url));
+    return NextResponse.redirect(new URL("/dashboard", request.url));
   }
 
   return NextResponse.next();
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login"],
+  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login", "/:workspace_slug/dashboard/:path*"],
 };

@@ -12,6 +12,9 @@ export type MeResponse = {
   organization: {
     id: string;
     workspace_name: string;
+    workspace_slug: string | null;
+    team_size: string | null;
+    team_members: string | null;
     agent_name: string;
     domain_name: string;
     agent_description: string | null;

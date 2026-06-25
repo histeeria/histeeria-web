@@ -10,8 +10,8 @@ export default async function OnboardingPage() {
   }
 
   const profile = await getCurrentUserProfile();
-  if (profile?.user.onboarded) {
-    redirect("/dashboard");
+  if (profile?.user.onboarded && profile?.organization?.workspace_slug) {
+    redirect(`/${profile.organization.workspace_slug}/dashboard`);
   }
 
   return <OnboardingFlow />;
