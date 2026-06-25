@@ -56,7 +56,7 @@ export const authOptions: NextAuthOptions = {
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/onboarding`;
+      return `${baseUrl}/`;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,
