@@ -2,14 +2,16 @@ import { getToken } from "next-auth/jwt";
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-const protectedRoutes = ["/dashboard", "/onboarding"];
+const protectedPrefixes = ["/dashboard", "/onboarding"];
+
+const workspaceRoutePattern =
+  /^\/[^/]+\/(dashboard|inbox|agents|evaluation|team)(\/|$)/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
   const isProtected =
-    protectedRoutes.some((route) => pathname.startsWith(route)) ||
-    pathname.endsWith("/dashboard") ||
-    pathname.includes("/dashboard/");
+    protectedPrefixes.some((route) => pathname.startsWith(route)) ||
+    workspaceRoutePattern.test(pathname);
   const isLogin = pathname.startsWith("/login");
 
   const token = await getToken({
@@ -31,5 +33,15 @@ export async function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: ["/dashboard/:path*", "/onboarding/:path*", "/login", "/:workspace_slug/dashboard/:path*"],
+  matcher: [
+    "/dashboard/:path*",
+    "/onboarding/:path*",
+    "/login",
+    "/:workspace_slug/dashboard",
+    "/:workspace_slug/dashboard/:path*",
+    "/:workspace_slug/inbox",
+    "/:workspace_slug/agents/:path*",
+    "/:workspace_slug/evaluation/:path*",
+    "/:workspace_slug/team/:path*",
+  ],
 };
