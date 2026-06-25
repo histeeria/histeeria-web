@@ -1,20 +1,11 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Activity,
-  Check,
-  Clipboard,
-  Inbox,
-  Radar,
-  Sparkles,
-  Zap,
-} from "lucide-react";
+import { Check, Clipboard } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 import type { MeResponse } from "@/lib/api";
 
-// Types matching backend payloads
 type DecisionSummary = {
   id: string;
   agent_id: string | null;
@@ -46,54 +37,58 @@ interface CommandCenterProps {
 }
 
 function getFormattedDate() {
-  const options: Intl.DateTimeFormatOptions = {
+  return new Date().toLocaleDateString("en-US", {
     weekday: "long",
     month: "long",
     day: "numeric",
-  };
-  return new Date().toLocaleDateString("en-US", options);
+  });
 }
 
 function StatCard({
-  icon,
   label,
   value,
   trend,
-  trendUp,
 }: {
-  icon: React.ReactNode;
   label: string;
   value: string | number;
   trend: string;
-  trendUp: boolean;
 }) {
   return (
-    <div className="panel rounded-xl p-5 select-none">
-      <div className="flex items-center justify-between">
-        <h3 className="text-xs font-semibold text-muted/80 uppercase tracking-wider">{label}</h3>
-        <div className="flex h-7 w-7 items-center justify-center rounded-lg border border-accent/25 bg-accent-soft text-accent">
-          {icon}
-        </div>
-      </div>
-      <p className="mt-2 text-2xl font-semibold tracking-tight text-foreground tabular-nums">
+    <div className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a] p-4">
+      <p className="text-[11px] font-medium text-[#52525b]">{label}</p>
+      <p className="mt-1 text-2xl font-medium tabular-nums tracking-tight text-[#fafafa]">
         {value}
       </p>
-      <p className="mt-1 text-[11px] font-medium text-muted">
-        <span className={cn("mr-1 font-bold", trendUp ? "text-success" : "text-[#c9a84c]")}>
-          {trendUp ? "↑" : "↓"} {trend}
-        </span>
-        vs yesterday
-      </p>
+      <p className="mt-1 text-[11px] text-[#71717a]">{trend}</p>
+    </div>
+  );
+}
+
+function Card({
+  title,
+  children,
+  action,
+}: {
+  title: string;
+  children: React.ReactNode;
+  action?: React.ReactNode;
+}) {
+  return (
+    <div className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a]">
+      <div className="flex items-center justify-between border-b border-[#27272a] px-4 py-3">
+        <h2 className="text-[13px] font-medium text-[#fafafa]">{title}</h2>
+        {action}
+      </div>
+      {children}
     </div>
   );
 }
 
 export function CommandCenter({ initial, profile }: CommandCenterProps) {
-  const [activeTab, setActiveTab] = useState<"live" | "judgements">("judgements");
   const [sdkLang, setLang] = useState<"python" | "typescript">("python");
   const [copiedKey, setCopiedKey] = useState(false);
 
-  const org = profile?.organization;
+  const org = profile.organization;
   const stats = initial?.stats;
   const decisions = initial?.decisions ?? [];
 
@@ -101,7 +96,6 @@ export function CommandCenter({ initial, profile }: CommandCenterProps) {
   const keySuffix = org?.key_suffix ?? "----";
   const keyLabel = `${keyPrefix}••••${keySuffix}`;
 
-  // SDK snippets
   const installCommands = {
     python: "pip install histeeria",
     typescript: "npm install histeeria",
@@ -112,7 +106,6 @@ export function CommandCenter({ initial, profile }: CommandCenterProps) {
 
 h = Histeeria(api_key="${keyPrefix}xxxx")
 
-# Wrap your LLM call
 response = your_llm_call(messages)
 
 h.observe(
@@ -126,7 +119,6 @@ h.observe(
 
 const h = new Histeeria({ apiKey: "${keyPrefix}xxxx" });
 
-// Wrap your LLM call
 const response = await yourLLMCall(messages);
 
 h.observe({
@@ -149,343 +141,213 @@ h.observe({
   }
 
   return (
-    <div className="p-6 md:p-8 space-y-8 animate-fade-up">
-      {/* 1. Dashboard Page Header */}
-      <div className="flex flex-wrap items-center justify-between gap-4 border-b border-border/40 pb-5 select-none">
-        <div>
-          <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-            Command Center
-          </h1>
-          <p className="text-[13px] text-muted">
-            {org?.workspace_name ?? "Histeeria Labs"} · {getFormattedDate()}
-          </p>
-        </div>
-
-        {/* Tab pills matching the design */}
-        <div className="flex rounded-lg border border-border bg-[#0c1018]/50 p-1 text-xs">
-          <button
-            type="button"
-            onClick={() => setActiveTab("live")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-medium transition",
-              activeTab === "live"
-                ? "bg-[#131a26] text-accent border border-accent/15 shadow-[0_4px_12px_rgba(124,140,255,0.12)]"
-                : "text-muted hover:text-foreground"
-            )}
-          >
-            <Activity className="h-3.5 w-3.5" />
-            Live Monitoring
-          </button>
-          <button
-            type="button"
-            onClick={() => setActiveTab("judgements")}
-            className={cn(
-              "flex items-center gap-1.5 rounded-md px-3.5 py-1.5 font-medium transition",
-              activeTab === "judgements"
-                ? "bg-[#131a26] text-accent border border-accent/15 shadow-[0_4px_12px_rgba(124,140,255,0.12)]"
-                : "text-muted hover:text-foreground"
-            )}
-          >
-            <Sparkles className="h-3.5 w-3.5" />
-            Judgements
-          </button>
-        </div>
+    <div className="space-y-6 p-6 md:p-8">
+      {/* Header */}
+      <div className="border-b border-[#27272a] pb-5">
+        <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa]">Command Center</h1>
+        <p className="mt-1 text-[13px] text-[#71717a]">
+          {org?.workspace_name ?? "Workspace"} · {getFormattedDate()}
+        </p>
       </div>
 
-      {/* 2. Numeric Statistics Grid */}
-      <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+      {/* Stats */}
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
         <StatCard
-          icon={<Radar className="h-4 w-4" />}
-          label="Active Agents"
-          value={stats ? stats.agents : "12"}
-          trend="+2"
-          trendUp={true}
+          label="Active agents"
+          value={stats?.agents ?? 0}
+          trend="+2 vs yesterday"
         />
         <StatCard
-          icon={<Activity className="h-4 w-4" />}
-          label="Decisions Today"
-          value={stats ? stats.total.toLocaleString() : "8,432"}
-          trend="+12%"
-          trendUp={true}
+          label="Decisions today"
+          value={stats ? stats.total.toLocaleString() : 0}
+          trend="+12% vs yesterday"
         />
         <StatCard
-          icon={<Inbox className="h-4 w-4" />}
-          label="Flagged Events"
-          value={stats ? stats.queued : "47"}
-          trend="+8"
-          trendUp={true}
+          label="Queued"
+          value={stats?.queued ?? 0}
+          trend="Awaiting evaluation"
         />
-        <StatCard
-          icon={<Zap className="h-4 w-4" />}
-          label="Avg Confidence"
-          value="84.2%"
-          trend="+1.4%"
-          trendUp={true}
-        />
+        <StatCard label="Evaluated" value={stats?.evaluated ?? 0} trend="Scored decisions" />
       </div>
 
-      {/* 3. Main Split Columns (Dynamic / Activity or Get Started Checklist) */}
-      <div className="grid gap-6 lg:grid-cols-3">
-        {/* Left Double-width Column: Recent Activity Feed OR Setup Checklist */}
-        <div className="lg:col-span-2 space-y-6">
+      <div className="grid gap-4 lg:grid-cols-3">
+        {/* Main column */}
+        <div className="space-y-4 lg:col-span-2">
           {decisions.length > 0 ? (
-            <div className="panel rounded-xl">
-              <div className="flex items-center justify-between border-b border-border/40 px-5 py-4 select-none">
-                <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-                  Recent Activity
-                </h2>
-                <span className="flex items-center gap-2 text-[10px] uppercase font-mono tracking-widest text-muted">
-                  <span className="h-2 w-2 rounded-full bg-success animate-pulse" />
-                  Live Observability
+            <Card
+              title="Recent activity"
+              action={
+                <span className="flex items-center gap-1.5 text-[11px] text-[#71717a]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#43d29e]" />
+                  Live
                 </span>
-              </div>
-
-              <ul className="divide-y divide-border/30">
+              }
+            >
+              <ul className="divide-y divide-[#27272a]">
                 {decisions.map((decision) => (
                   <li
                     key={decision.id}
-                    className="flex items-start justify-between gap-4 px-5 py-4 hover:bg-[#0c1018]/15 transition-all select-none"
+                    className="flex items-start justify-between gap-4 px-4 py-3 hover:bg-[#141414]/50"
                   >
-                    <div className="flex items-start gap-3 min-w-0">
-                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-success" />
+                    <div className="flex min-w-0 items-start gap-2.5">
+                      <span className="mt-1.5 h-1.5 w-1.5 shrink-0 rounded-full bg-[#43d29e]" />
                       <div className="min-w-0">
-                        <p className="text-sm font-medium text-foreground leading-snug">
+                        <p className="truncate text-[13px] font-medium text-[#fafafa]">
                           {decision.agent_id ?? org?.agent_name ?? "Agent decision"}
                         </p>
-                        <p className="mt-1 text-xs text-muted/75 truncate pr-4">
+                        <p className="mt-0.5 truncate text-[12px] text-[#71717a]">
                           {decision.output_preview}
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-3 shrink-0 text-right">
-                      <div>
-                        <p className="text-[11px] font-mono text-muted/80">
-                          {new Date(decision.received_at).toLocaleTimeString([], {
-                            hour: "2-digit",
-                            minute: "2-digit",
-                          })}
-                        </p>
-                        <p className="mt-0.5 text-[10px] text-muted/50 capitalize">
-                          {decision.domain ?? org?.domain_name ?? "General"}
-                        </p>
-                      </div>
-                      <span className="rounded border border-success/40 bg-success/5 px-2 py-0.5 text-xs font-bold font-mono text-success tabular-nums">
-                        82%
-                      </span>
-                    </div>
+                    <span className="shrink-0 font-mono text-[11px] text-[#52525b]">
+                      {new Date(decision.received_at).toLocaleTimeString([], {
+                        hour: "2-digit",
+                        minute: "2-digit",
+                      })}
+                    </span>
                   </li>
                 ))}
               </ul>
-            </div>
+            </Card>
           ) : (
-            /* Get Started Integration checklist */
-            <div className="space-y-6">
-              <div className="panel rounded-xl p-6 space-y-4">
-                <div className="space-y-1.5 select-none">
-                  <div className="inline-flex items-center gap-2 rounded bg-accent-soft border border-accent/25 px-2 py-0.5 text-[10px] font-bold uppercase tracking-wider text-accent">
-                    Get Started List
+            <Card title="Get started">
+              <div className="space-y-5 p-4">
+                <p className="text-[13px] leading-relaxed text-[#71717a]">
+                  Complete these steps to connect your agent and start monitoring decisions.
+                </p>
+
+                {/* Step 1 */}
+                <div className="flex gap-3">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-[#27272a]">
+                    <Check className="h-3 w-3 text-[#fafafa]" />
                   </div>
-                  <h2 className="text-lg font-semibold text-foreground">
-                    Connect your AI agent
-                  </h2>
-                  <p className="text-[13px] leading-relaxed text-muted">
-                    Before Histeeria can score decisions, your model must send its first observation.
-                    Complete these 3 steps to activate live monitoring.
-                  </p>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-[#fafafa]">Generate API key</p>
+                    <div className="mt-2 flex items-center justify-between rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2">
+                      <code className="font-mono text-[12px] text-[#a1a1aa]">{keyLabel}</code>
+                      <button
+                        type="button"
+                        onClick={() => copyToClipboard(keyLabel)}
+                        className="text-[#71717a] hover:text-[#fafafa]"
+                      >
+                        {copiedKey ? (
+                          <span className="text-[11px]">Copied</span>
+                        ) : (
+                          <Clipboard className="h-3.5 w-3.5" />
+                        )}
+                      </button>
+                    </div>
+                  </div>
                 </div>
 
-                <div className="space-y-3.5 border-t border-border/40 pt-4">
-                  {/* Step 1: API Key Generated */}
-                  <div className="flex items-start gap-3.5">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full bg-success/15 border border-success/30 text-success">
-                      <Check className="h-3.5 w-3.5 stroke-[2.5]" />
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground select-none">
-                        1. Generate API key (Completed)
-                      </h4>
-                      <div className="mt-2 flex items-center justify-between gap-3 rounded-lg border border-border-strong bg-[#0c1018]/50 px-3.5 py-2.5 max-w-[320px]">
-                        <code className="font-mono text-xs text-accent select-all">{keyLabel}</code>
-                        <button
-                          type="button"
-                          onClick={() => copyToClipboard(keyLabel)}
-                          className="text-muted hover:text-foreground transition-colors cursor-pointer"
-                        >
-                          {copiedKey ? (
-                            <span className="text-[11px] font-semibold text-success">Copied</span>
-                          ) : (
-                            <Clipboard className="h-3.5 w-3.5" />
-                          )}
-                        </button>
+                {/* Step 2 */}
+                <div className="flex gap-3">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#27272a] text-[11px] text-[#71717a]">
+                    2
+                  </div>
+                  <div className="flex-1">
+                    <p className="text-[13px] font-medium text-[#fafafa]">Integrate the SDK</p>
+                    <div className="mt-2 overflow-hidden rounded-[8px] border border-[#27272a]">
+                      <div className="flex gap-1 border-b border-[#27272a] bg-[#141414] px-3 py-2">
+                        {(["python", "typescript"] as const).map((lang) => (
+                          <button
+                            key={lang}
+                            type="button"
+                            onClick={() => setLang(lang)}
+                            className={cn(
+                              "rounded px-2 py-0.5 text-[11px] capitalize transition",
+                              sdkLang === lang
+                                ? "bg-[#27272a] text-[#fafafa]"
+                                : "text-[#71717a] hover:text-[#a1a1aa]",
+                            )}
+                          >
+                            {lang}
+                          </button>
+                        ))}
+                      </div>
+                      <div className="space-y-2 p-3">
+                        <code className="block rounded-[6px] bg-black px-3 py-2 font-mono text-[11px] text-[#a1a1aa]">
+                          {installCommands[sdkLang]}
+                        </code>
+                        <pre className="overflow-x-auto rounded-[6px] bg-black px-3 py-2 font-mono text-[11px] leading-relaxed text-[#71717a]">
+                          {codeSnippets[sdkLang]}
+                        </pre>
                       </div>
                     </div>
                   </div>
+                </div>
 
-                  {/* Step 2: Install SDK */}
-                  <div className="flex items-start gap-3.5 pt-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-muted">
-                      <span className="font-mono text-[11px] font-bold">2</span>
-                    </div>
-                    <div className="flex-1">
-                      <h4 className="text-sm font-semibold text-foreground select-none">
-                        2. Integrate the SDK
-                      </h4>
-                      <p className="mt-0.5 text-xs text-muted select-none">
-                        Install and wrap your model calls with our lightweight SDK.
-                      </p>
-
-                      {/* Language Toggles */}
-                      <div className="mt-4 border border-border-strong rounded-xl overflow-hidden bg-[#0c1018]/20">
-                        <div className="flex items-center justify-between bg-[#0a0e14] px-4 py-2 border-b border-border/40 select-none">
-                          <div className="flex gap-2">
-                            {(["python", "typescript"] as const).map((l) => (
-                              <button
-                                key={l}
-                                type="button"
-                                onClick={() => setLang(l)}
-                                className={cn(
-                                  "rounded px-2.5 py-1 text-[11px] font-semibold uppercase tracking-wider transition-colors",
-                                  sdkLang === l
-                                    ? "bg-accent/15 text-accent border border-accent/25"
-                                    : "text-muted hover:text-foreground"
-                                )}
-                              >
-                                {l}
-                              </button>
-                            ))}
-                          </div>
-                        </div>
-
-                        <div className="p-4 space-y-3">
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted/60">
-                              Shell
-                            </span>
-                            <div className="rounded bg-[#06080e] p-2.5 font-mono text-xs border border-border-strong/40 select-all">
-                              {installCommands[sdkLang]}
-                            </div>
-                          </div>
-
-                          <div className="space-y-1">
-                            <span className="text-[10px] font-bold uppercase tracking-wider text-muted/60">
-                              Implementation
-                            </span>
-                            <pre className="rounded bg-[#06080e] p-3 font-mono text-xs border border-border-strong/40 overflow-x-auto text-foreground/80 select-all leading-relaxed">
-                              {codeSnippets[sdkLang]}
-                            </pre>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
+                {/* Step 3 */}
+                <div className="flex gap-3">
+                  <div className="flex h-5 w-5 shrink-0 items-center justify-center rounded-full border border-[#27272a] text-[11px] text-[#71717a]">
+                    3
                   </div>
-
-                  {/* Step 3: Send Decision */}
-                  <div className="flex items-start gap-3.5 pt-2">
-                    <div className="flex h-6 w-6 shrink-0 items-center justify-center rounded-full border border-border-strong bg-surface-2 text-muted">
-                      <span className="font-mono text-[11px] font-bold">3</span>
-                    </div>
-                    <div>
-                      <h4 className="text-sm font-semibold text-foreground select-none">
-                        3. Awaiting Live Decision
-                      </h4>
-                      <div className="mt-2.5 flex items-center gap-3">
-                        <span className="relative flex h-2.5 w-2.5">
-                          <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent opacity-75" />
-                          <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent" />
-                        </span>
-                        <span className="font-mono text-xs text-accent select-none">
-                          Awaiting first observation...
-                        </span>
-                      </div>
-                    </div>
+                  <div>
+                    <p className="text-[13px] font-medium text-[#fafafa]">Awaiting first decision</p>
+                    <p className="mt-1 flex items-center gap-2 text-[12px] text-[#71717a]">
+                      <span className="relative flex h-2 w-2">
+                        <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-[#52525b] opacity-75" />
+                        <span className="relative inline-flex h-2 w-2 rounded-full bg-[#71717a]" />
+                      </span>
+                      Listening for observations...
+                    </p>
                   </div>
                 </div>
               </div>
-            </div>
+            </Card>
           )}
         </div>
 
-        {/* Right Single-width Column: Inbox & System Health boxes */}
-        <div className="space-y-6 select-none">
-          {/* Inbox Alert List */}
-          <div className="panel rounded-xl">
-            <div className="flex items-center justify-between border-b border-border/40 px-5 py-4">
-              <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground flex items-center gap-1.5">
-                <Inbox className="h-4 w-4 text-muted/80" />
-                Inbox
-              </h2>
-              <span className="rounded bg-accent-soft border border-accent/25 px-1.5 py-0.2 text-[10px] font-semibold text-accent">
-                2 unread
+        {/* Sidebar column */}
+        <div className="space-y-4">
+          <Card
+            title="Inbox"
+            action={
+              <span className="rounded-full bg-[#27272a] px-2 py-0.5 text-[10px] text-[#a1a1aa]">
+                2
               </span>
-            </div>
-
-            <ul className="divide-y divide-border/20 text-xs">
-              <li className="p-4 bg-accent-soft/10 flex items-start gap-2.5 border-l-2 border-accent">
-                <span className="h-2 w-2 mt-1 rounded-full bg-accent" />
-                <div>
-                  <p className="font-medium text-foreground">
-                    Workspace successfully created
-                  </p>
-                  <p className="mt-0.5 text-muted/70">
-                    Welcome to Histeeria Labs. Connect your agent and look up the dashboard links.
-                  </p>
-                  <p className="mt-1 text-[10px] font-mono text-muted/50">Just now</p>
-                </div>
+            }
+          >
+            <ul className="divide-y divide-[#27272a] text-[12px]">
+              <li className="px-4 py-3">
+                <p className="font-medium text-[#fafafa]">Workspace created</p>
+                <p className="mt-0.5 text-[#71717a]">Welcome to Histeeria. Connect your agent to begin.</p>
               </li>
-              <li className="p-4 flex items-start gap-2.5">
-                <span className="h-2 w-2 mt-1 rounded-full bg-muted/30" />
-                <div>
-                  <p className="font-medium text-foreground/80">
-                    Awaiting API Integration
-                  </p>
-                  <p className="mt-0.5 text-muted/65">
-                    Your agent configured as <code className="text-accent">{org?.agent_name ?? "Support Copilot"}</code> hasn&apos;t started sending decisions.
-                  </p>
-                  <p className="mt-1 text-[10px] font-mono text-muted/50">2m ago</p>
-                </div>
+              <li className="px-4 py-3">
+                <p className="font-medium text-[#fafafa]">Awaiting integration</p>
+                <p className="mt-0.5 text-[#71717a]">
+                  {org?.agent_name ?? "Your agent"} hasn&apos;t sent a decision yet.
+                </p>
               </li>
             </ul>
-          </div>
+          </Card>
 
-          {/* System Health Component */}
-          <div className="panel rounded-xl p-5 space-y-4">
-            <h2 className="text-xs font-semibold uppercase tracking-wider text-foreground">
-              System Health
-            </h2>
-
-            <div className="space-y-3.5 text-xs">
+          <Card title="System health">
+            <div className="space-y-3 p-4 text-[12px]">
               <div className="flex items-center justify-between">
-                <span className="font-medium text-foreground/85">
-                  {org?.agent_name ?? "Support Copilot"}
-                </span>
-                <span className="flex items-center gap-2 text-muted">
-                  <span className="h-2 w-2 rounded-full bg-accent animate-pulse" />
-                  Awaiting Integration
+                <span className="text-[#a1a1aa]">{org?.agent_name ?? "Primary agent"}</span>
+                <span className="flex items-center gap-1.5 text-[#71717a]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#71717a]" />
+                  Pending
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t border-border/20 pt-3">
-                <span className="font-medium text-foreground/85">Nexus-7</span>
-                <span className="flex items-center gap-2 text-success">
-                  <span className="h-2 w-2 rounded-full bg-success" />
+              <div className="flex items-center justify-between border-t border-[#27272a] pt-3">
+                <span className="text-[#a1a1aa]">Ingestion pipeline</span>
+                <span className="flex items-center gap-1.5 text-[#43d29e]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#43d29e]" />
                   Healthy
                 </span>
               </div>
-              <div className="flex items-center justify-between border-t border-border/20 pt-3">
-                <span className="font-medium text-foreground/85">Orion-3</span>
-                <span className="flex items-center gap-2 text-[#c9a84c]">
-                  <span className="h-2 w-2 rounded-full bg-[#c9a84c]" />
-                  Warning
-                </span>
-              </div>
-              <div className="flex items-center justify-between border-t border-border/20 pt-3">
-                <span className="font-medium text-foreground/85">Atlas-1</span>
-                <span className="flex items-center gap-2 text-success">
-                  <span className="h-2 w-2 rounded-full bg-success" />
+              <div className="flex items-center justify-between border-t border-[#27272a] pt-3">
+                <span className="text-[#a1a1aa]">Evaluation queue</span>
+                <span className="flex items-center gap-1.5 text-[#43d29e]">
+                  <span className="h-1.5 w-1.5 rounded-full bg-[#43d29e]" />
                   Healthy
                 </span>
               </div>
             </div>
-          </div>
+          </Card>
         </div>
       </div>
     </div>
