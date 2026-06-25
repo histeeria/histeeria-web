@@ -2,23 +2,31 @@ import { getToken } from "next-auth/jwt";
 import { getServerSession } from "next-auth";
 import { cookies, headers } from "next/headers";
 
+import { signBackendToken } from "@/lib/backend-token";
 import { authOptions } from "@/lib/auth";
 import { getMe, type MeResponse } from "@/lib/api";
 
-export async function getSessionToken() {
+async function readSessionToken() {
   const cookieStore = await cookies();
   const headerStore = await headers();
 
-  const token = await getToken({
+  const session = await getToken({
     req: {
       headers: Object.fromEntries(headerStore.entries()),
       cookies: Object.fromEntries(cookieStore.getAll().map((c) => [c.name, c.value])),
     } as never,
     secret: process.env.NEXTAUTH_SECRET,
-    raw: true,
   });
 
-  return typeof token === "string" ? token : null;
+  if (!session?.email) {
+    return null;
+  }
+
+  return signBackendToken(session);
+}
+
+export async function getSessionToken() {
+  return readSessionToken();
 }
 
 export async function requireSession() {
@@ -35,7 +43,7 @@ export async function getCurrentUserProfile(): Promise<MeResponse | null> {
     return null;
   }
 
-  const token = await getSessionToken();
+  const token = await readSessionToken();
   if (!token) {
     return null;
   }
