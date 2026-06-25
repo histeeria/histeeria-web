@@ -43,7 +43,7 @@ function GoogleIcon() {
 
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/onboarding";
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
   const error = searchParams.get("error");
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
 
