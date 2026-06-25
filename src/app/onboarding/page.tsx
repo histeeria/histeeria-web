@@ -1,6 +1,7 @@
 import { redirect } from "next/navigation";
 
 import { OnboardingFlow } from "@/components/onboarding/onboarding-flow";
+import { AuthProvider } from "@/components/providers/auth-provider";
 import { getCurrentUserProfile, requireSession } from "@/lib/server";
 
 export default async function OnboardingPage() {
@@ -14,5 +15,9 @@ export default async function OnboardingPage() {
     redirect(`/${profile.organization.workspace_slug}/dashboard`);
   }
 
-  return <OnboardingFlow />;
+  return (
+    <AuthProvider>
+      <OnboardingFlow />
+    </AuthProvider>
+  );
 }
