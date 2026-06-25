@@ -123,8 +123,8 @@ export function OnboardingFlow() {
       <div className="space-y-4">
         <StepIndicator currentStep={step} />
         <div>
-          <h1 className="text-3xl font-semibold tracking-tight">Set up your agent</h1>
-          <p className="mt-2 text-sm text-muted">
+          <h1 className="text-3xl font-semibold tracking-tight text-foreground">Set up your agent</h1>
+          <p className="mt-2 text-sm leading-relaxed text-muted">
             Three quick steps to connect Histeeria and start observing judgment.
           </p>
         </div>
@@ -137,7 +137,7 @@ export function OnboardingFlow() {
           animate={{ opacity: 1, y: 0 }}
           exit={{ opacity: 0, y: -12 }}
           transition={{ duration: 0.25 }}
-          className="rounded-2xl border border-border bg-card p-6 sm:p-8"
+          className="panel rounded-2xl p-6 sm:p-8"
         >
           {step === 1 ? (
             <div className="space-y-5">
@@ -174,27 +174,27 @@ export function OnboardingFlow() {
                       type="button"
                       onClick={() => updateField("domain_name", domain.value)}
                       className={cn(
-                        "rounded-xl border px-4 py-4 text-left transition",
+                        "rounded-lg border px-4 py-4 text-left transition",
                         selected
-                          ? "border-gold bg-gold-soft"
-                          : "border-border bg-white/[0.02] hover:border-gold/30",
+                          ? "border-accent bg-accent-soft"
+                          : "border-border-strong bg-surface-2 hover:border-accent/35 hover:bg-surface-3",
                       )}
                     >
-                      <p className="font-medium">{domain.label}</p>
-                      <p className="mt-1 text-xs text-muted">{domain.description}</p>
+                      <p className="font-medium text-foreground">{domain.label}</p>
+                      <p className="mt-1 text-xs leading-relaxed text-muted">{domain.description}</p>
                     </button>
                   );
                 })}
               </div>
               {errors.domain_name ? (
-                <p className="text-xs text-red-400">{errors.domain_name}</p>
+                <p className="text-xs text-danger">{errors.domain_name}</p>
               ) : null}
             </div>
           ) : null}
 
           {step === 3 ? (
             <div className="space-y-5">
-              <div className="rounded-xl border border-border bg-white/[0.02] px-4 py-3 text-sm">
+              <div className="rounded-lg border border-border-strong bg-surface-2 px-4 py-3 text-sm">
                 <p className="text-muted">Review</p>
                 <p className="mt-1 font-medium">{form.agent_name}</p>
                 <p className="text-muted">
@@ -214,7 +214,7 @@ export function OnboardingFlow() {
           ) : null}
 
           {submitError ? (
-            <div className="mt-5 rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+            <div className="mt-5 rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
               {submitError}
             </div>
           ) : null}

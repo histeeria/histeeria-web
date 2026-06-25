@@ -17,14 +17,16 @@ export function AppShell({
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border/80 backdrop-blur">
+      <header className="border-b border-border bg-surface-1/95 backdrop-blur">
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 sm:px-6">
           <div className="flex items-center gap-6">
             <Link href="/dashboard" className="text-sm font-semibold tracking-[0.25em] text-gold">
               HISTEERIA
             </Link>
             {workspaceName ? (
-              <span className="hidden text-sm text-muted sm:inline">{workspaceName}</span>
+              <span className="hidden rounded-md border border-border px-2.5 py-1 text-xs text-muted sm:inline">
+                {workspaceName}
+              </span>
             ) : null}
           </div>
 

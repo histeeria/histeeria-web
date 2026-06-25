@@ -54,15 +54,15 @@ export function LoginForm() {
   return (
     <div className="animate-fade-up space-y-6">
       <div className="space-y-2 text-center">
-        <p className="text-xs uppercase tracking-[0.35em] text-gold">Histeeria</p>
-        <h1 className="text-3xl font-semibold tracking-tight">Sign in to continue</h1>
-        <p className="text-sm text-muted">
+        <p className="text-xs uppercase tracking-[0.32em] text-gold">Histeeria</p>
+        <h1 className="text-3xl font-semibold tracking-tight text-foreground">Sign in to continue</h1>
+        <p className="text-sm leading-relaxed text-muted">
           Monitor, judge, and improve your agent&apos;s decision-making.
         </p>
       </div>
 
       {error ? (
-        <div className="rounded-xl border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-300">
+        <div className="rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-sm text-danger">
           Sign in failed. Please try again.
         </div>
       ) : null}
@@ -72,7 +72,7 @@ export function LoginForm() {
           type="button"
           variant="secondary"
           size="lg"
-          className="w-full"
+          className="w-full justify-center"
           disabled={!!loadingProvider}
           onClick={() => handleSignIn("google")}
         >
@@ -83,7 +83,7 @@ export function LoginForm() {
           type="button"
           variant="secondary"
           size="lg"
-          className="w-full"
+          className="w-full justify-center"
           disabled={!!loadingProvider}
           onClick={() => handleSignIn("github")}
         >
@@ -92,7 +92,7 @@ export function LoginForm() {
         </Button>
       </div>
 
-      <p className="text-center text-xs leading-relaxed text-muted">
+      <p className="text-center text-xs leading-relaxed text-muted/85">
         By continuing, you agree to Histeeria&apos;s terms and privacy policy.
       </p>
     </div>

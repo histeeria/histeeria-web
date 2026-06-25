@@ -30,8 +30,8 @@ export function ApiKeyReveal({
         </p>
       </div>
 
-      <div className="rounded-2xl border border-gold/30 bg-gold-soft p-4">
-        <code className="block break-all font-mono text-sm text-gold">{apiKey}</code>
+      <div className="rounded-lg border border-accent/35 bg-accent-soft p-4">
+        <code className="block break-all font-mono text-sm text-accent">{apiKey}</code>
       </div>
 
       <div className="flex flex-col gap-3 sm:flex-row">

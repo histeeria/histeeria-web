@@ -1,14 +1,21 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0a0a0f;
-  --foreground: #f4f4f5;
-  --muted: #71717a;
-  --border: rgba(255, 255, 255, 0.08);
-  --card: rgba(255, 255, 255, 0.03);
+  --background: #06070a;
+  --foreground: #f7f8fa;
+  --muted: #9ea4b4;
+  --border: #242938;
+  --border-strong: #32394b;
+  --surface-1: #0c1018;
+  --surface-2: #131a26;
+  --surface-3: #1a2331;
+  --accent: #7c8cff;
+  --accent-soft: rgba(124, 140, 255, 0.14);
+  --danger: #ff5d73;
+  --danger-soft: rgba(255, 93, 115, 0.14);
+  --success: #43d29e;
   --gold: #c9a84c;
   --gold-soft: rgba(201, 168, 76, 0.15);
-  --success: #34d399;
 }
 
 @theme inline {
@@ -16,7 +23,14 @@
   --color-foreground: var(--foreground);
   --color-muted: var(--muted);
   --color-border: var(--border);
-  --color-card: var(--card);
+  --color-border-strong: var(--border-strong);
+  --color-card: var(--surface-1);
+  --color-surface-2: var(--surface-2);
+  --color-surface-3: var(--surface-3);
+  --color-accent: var(--accent);
+  --color-accent-soft: var(--accent-soft);
+  --color-danger: var(--danger);
+  --color-danger-soft: var(--danger-soft);
   --color-gold: var(--gold);
   --color-gold-soft: var(--gold-soft);
   --font-sans: var(--font-geist-sans);
@@ -32,13 +46,16 @@ html {
 }
 
 body {
-  background: var(--background);
+  background:
+    radial-gradient(1200px 700px at 20% -10%, rgba(124, 140, 255, 0.1), transparent 55%),
+    radial-gradient(900px 600px at 90% 0%, rgba(124, 140, 255, 0.06), transparent 60%),
+    var(--background);
   color: var(--foreground);
   font-family: var(--font-geist-sans), system-ui, sans-serif;
 }
 
 ::selection {
-  background: rgba(201, 168, 76, 0.35);
+  background: rgba(124, 140, 255, 0.35);
 }
 
 input,
@@ -60,4 +77,12 @@ button {
 
 .animate-fade-up {
   animation: fade-up 0.45s ease-out both;
+}
+
+.panel {
+  border: 1px solid var(--border);
+  background: linear-gradient(180deg, var(--surface-2) 0%, var(--surface-1) 100%);
+  box-shadow:
+    0 1px 0 rgba(255, 255, 255, 0.04) inset,
+    0 24px 60px rgba(2, 6, 18, 0.55);
 }

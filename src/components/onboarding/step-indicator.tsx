@@ -4,7 +4,7 @@ const steps = ["Workspace", "Domain", "Describe"];
 
 export function StepIndicator({ currentStep }: { currentStep: number }) {
   return (
-    <div className="flex items-center gap-3">
+    <div className="flex items-center gap-3 rounded-lg border border-border bg-surface-2/75 px-4 py-3">
       {steps.map((label, index) => {
         const stepNumber = index + 1;
         const active = stepNumber === currentStep;
@@ -15,10 +15,10 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
             <div className="flex items-center gap-2">
               <div
                 className={cn(
-                  "flex h-8 w-8 items-center justify-center rounded-full border text-xs font-semibold transition",
-                  active && "border-gold bg-gold-soft text-gold",
-                  completed && "border-gold/40 bg-gold text-black",
-                  !active && !completed && "border-border text-muted",
+                  "flex h-7 w-7 items-center justify-center rounded-full border text-[11px] font-semibold transition",
+                  active && "border-accent bg-accent-soft text-accent",
+                  completed && "border-accent/40 bg-accent text-white",
+                  !active && !completed && "border-border-strong text-muted",
                 )}
               >
                 {completed ? "✓" : stepNumber}
@@ -26,7 +26,7 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
               <span
                 className={cn(
                   "hidden text-sm sm:inline",
-                  active ? "text-foreground" : "text-muted",
+                  active ? "font-medium text-foreground" : "text-muted",
                 )}
               >
                 {label}
@@ -36,7 +36,7 @@ export function StepIndicator({ currentStep }: { currentStep: number }) {
               <div
                 className={cn(
                   "hidden h-px w-10 sm:block",
-                  completed ? "bg-gold/50" : "bg-border",
+                  completed ? "bg-accent/50" : "bg-border-strong",
                 )}
               />
             ) : null}

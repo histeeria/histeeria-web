@@ -37,8 +37,8 @@ export default async function DashboardPage() {
       </div>
 
       <div className="grid gap-4 md:grid-cols-3">
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gold-soft text-gold">
+        <div className="panel rounded-2xl p-5">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-accent/30 bg-accent-soft text-accent">
             <Radar className="h-5 w-5" />
           </div>
           <h2 className="font-medium">Observations</h2>
@@ -46,8 +46,8 @@ export default async function DashboardPage() {
           <p className="mt-1 text-xs text-muted">Decisions received</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
-          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-xl bg-gold-soft text-gold">
+        <div className="panel rounded-2xl p-5">
+          <div className="mb-3 flex h-10 w-10 items-center justify-center rounded-lg border border-accent/30 bg-accent-soft text-accent">
             <KeyRound className="h-5 w-5" />
           </div>
           <h2 className="font-medium">API key</h2>
@@ -57,7 +57,7 @@ export default async function DashboardPage() {
           <p className="mt-1 text-xs text-muted">Active live key</p>
         </div>
 
-        <div className="rounded-2xl border border-border bg-card p-5">
+        <div className="panel rounded-2xl p-5">
           <p className="text-xs uppercase tracking-wide text-muted">Domain</p>
           <p className="mt-2 text-lg font-medium capitalize">
             {org?.domain_name?.replaceAll("_", " ") ?? "General"}
@@ -66,7 +66,7 @@ export default async function DashboardPage() {
         </div>
       </div>
 
-      <div className="rounded-2xl border border-dashed border-gold/30 bg-gold-soft/40 p-8 text-center">
+      <div className="rounded-2xl border border-border-strong bg-surface-2 p-8 text-center">
         <h2 className="text-xl font-semibold">Ready when you are</h2>
         <p className="mx-auto mt-2 max-w-xl text-sm text-muted">
           Connect your agent with the Histeeria SDK. Every decision you send will be scored across
@@ -75,7 +75,7 @@ export default async function DashboardPage() {
         <div className="mt-6 flex flex-col items-center justify-center gap-3 sm:flex-row">
           <Link
             href="https://histeeria.com/docs"
-            className="inline-flex h-11 items-center justify-center gap-2 rounded-xl bg-gold px-6 text-sm font-medium text-black transition hover:bg-[#d4b45a]"
+            className="inline-flex h-11 items-center justify-center gap-2 rounded-lg border border-accent bg-accent px-6 text-sm font-medium text-white transition hover:bg-[#7181f4]"
           >
             View integration guide
             <ArrowRight className="h-4 w-4" />
