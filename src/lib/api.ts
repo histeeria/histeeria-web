@@ -5,6 +5,8 @@ export type MeResponse = {
     id: string;
     email: string;
     full_name: string | null;
+    role: string | null;
+    heard_from: string | null;
     created_at: string;
     onboarded: boolean;
     organization_id: string | null;
@@ -26,9 +28,15 @@ export type MeResponse = {
 
 export type OnboardingPayload = {
   workspace_name: string;
+  workspace_slug: string;
+  team_size?: string;
+  team_members?: string;
   agent_name: string;
   domain_name: string;
   agent_description: string;
+  full_name: string;
+  role?: string;
+  heard_from?: string;
 };
 
 export type OnboardingResponse = {
