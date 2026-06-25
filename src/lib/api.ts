@@ -35,6 +35,32 @@ export type OnboardingResponse = {
   message: string;
 };
 
+export type DecisionSummary = {
+  id: string;
+  agent_id: string | null;
+  session_id: string | null;
+  domain: string | null;
+  output_preview: string;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  sdk_version: string | null;
+  status: string;
+  received_at: string;
+};
+
+export type DecisionListResponse = {
+  decisions: DecisionSummary[];
+  total: number;
+};
+
+export type DecisionStats = {
+  total: number;
+  queued: number;
+  evaluated: number;
+  agents: number;
+  last_received_at: string | null;
+};
+
 async function apiFetch<T>(
   path: string,
   options: RequestInit & { token?: string } = {},
@@ -89,6 +115,14 @@ export async function regenerateApiKey(token: string) {
     method: "POST",
     token,
   });
+}
+
+export async function getDecisions(token: string, limit = 25) {
+  return apiFetch<DecisionListResponse>(`/v1/decisions?limit=${limit}`, { token });
+}
+
+export async function getDecisionStats(token: string) {
+  return apiFetch<DecisionStats>("/v1/decisions/stats", { token });
 }
 
 export const DOMAINS = [
