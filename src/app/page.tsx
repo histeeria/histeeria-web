@@ -16,5 +16,9 @@ export default async function HomePage() {
     redirect("/onboarding");
   }
 
+  if (profile.organization?.workspace_slug) {
+    redirect(`/${profile.organization.workspace_slug}/dashboard`);
+  }
+
   redirect("/dashboard");
 }

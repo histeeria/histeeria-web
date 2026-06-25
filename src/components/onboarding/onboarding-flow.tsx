@@ -4,14 +4,11 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useMemo, useState } from "react";
+import { useMemo, useRef, useState } from "react";
 import { Link2, Check } from "lucide-react";
 
 import { ApiKeyReveal } from "@/components/onboarding/api-key-reveal";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
-import { completeOnboarding, DOMAINS, type OnboardingPayload } from "@/lib/api";
+import { checkWorkspaceSlug, completeOnboarding, DOMAINS, type OnboardingPayload } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type FormState = OnboardingPayload;
@@ -29,6 +26,10 @@ const initialForm: FormState = {
   heard_from: "",
 };
 
+const fieldClass =
+  "w-full rounded-[10px] border border-[#27272a] bg-[#141414] px-3.5 py-2.5 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#181818]";
+const labelClass = "block text-[13px] font-medium text-[#a1a1aa] select-none";
+
 export function OnboardingFlow() {
   const router = useRouter();
   const { data: session, update } = useSession();
@@ -36,16 +37,17 @@ export function OnboardingFlow() {
   const [form, setForm] = useState<FormState>(initialForm);
   const [errors, setErrors] = useState<Partial<Record<keyof FormState, string>>>({});
   const [submitting, setSubmitting] = useState(false);
+  const [checkingSlug, setCheckingSlug] = useState(false);
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const slugManuallyEdited = useRef(false);
 
   const workspacePlaceholder = useMemo(() => {
     const firstName = session?.user?.name?.split(" ")[0] ?? "My";
     return `${firstName}'s Workspace`;
   }, [session?.user?.name]);
 
-  // Helper to slugify workspace name
   function slugify(text: string) {
     return text
       .toLowerCase()
@@ -56,9 +58,8 @@ export function OnboardingFlow() {
   function updateField<K extends keyof FormState>(key: K, value: FormState[K]) {
     setForm((current) => {
       const updated = { ...current, [key]: value };
-      
-      // Auto-slugify workspace name to slug if the user hasn't manually edited slug yet
-      if (key === "workspace_name" && typeof value === "string" && !errors.workspace_slug) {
+
+      if (key === "workspace_name" && typeof value === "string" && !slugManuallyEdited.current) {
         updated.workspace_slug = slugify(value);
       }
       return updated;
@@ -103,9 +104,49 @@ export function OnboardingFlow() {
     return Object.keys(nextErrors).length === 0;
   }
 
+  async function verifySlugAvailability() {
+    const slug = form.workspace_slug.trim() || slugify(form.workspace_name.trim() || workspacePlaceholder);
+
+    setCheckingSlug(true);
+    try {
+      const tokenResponse = await fetch("/api/session-token");
+      if (!tokenResponse.ok) {
+        throw new Error("Unable to authenticate request");
+      }
+      const { token } = (await tokenResponse.json()) as { token: string };
+      const result = await checkWorkspaceSlug(token, slug);
+
+      if (!result.available) {
+        setErrors((current) => ({
+          ...current,
+          workspace_slug: result.reason ?? "Workspace slug is already taken.",
+        }));
+        return false;
+      }
+
+      if (result.slug !== form.workspace_slug) {
+        setForm((current) => ({ ...current, workspace_slug: result.slug }));
+      }
+
+      return true;
+    } catch (error) {
+      setSubmitError(error instanceof Error ? error.message : "Unable to verify slug");
+      return false;
+    } finally {
+      setCheckingSlug(false);
+    }
+  }
+
   async function handleNext() {
     if (!validateStep(step)) {
       return;
+    }
+
+    if (step === 1) {
+      const slugOk = await verifySlugAvailability();
+      if (!slugOk) {
+        return;
+      }
     }
 
     if (step < 4) {
@@ -122,7 +163,7 @@ export function OnboardingFlow() {
         throw new Error("Unable to authenticate request");
       }
       const { token } = (await tokenResponse.json()) as { token: string };
-      
+
       const payload: OnboardingPayload = {
         workspace_name: form.workspace_name.trim() || workspacePlaceholder,
         workspace_slug: form.workspace_slug.trim() || slugify(form.workspace_name || workspacePlaceholder),
@@ -146,6 +187,10 @@ export function OnboardingFlow() {
     }
   }
 
+  function handleSkipInvites() {
+    setStep(3);
+  }
+
   async function handleCopyInviteLink() {
     const inviteSlug = form.workspace_slug || slugify(form.workspace_name || workspacePlaceholder);
     const domain = typeof window !== "undefined" ? window.location.origin : "https://app.histeeria.com";
@@ -159,14 +204,19 @@ export function OnboardingFlow() {
     }
   }
 
+  const primaryLabel = useMemo(() => {
+    if (submitting) return "Creating...";
+    if (checkingSlug) return "Checking...";
+    if (step === 2) return form.team_members?.trim() ? "Send invitations" : "Continue";
+    if (step === 4) return "Complete onboarding";
+    return "Continue";
+  }, [checkingSlug, form.team_members, step, submitting]);
+
   if (apiKey) {
     const finalSlug = form.workspace_slug || slugify(form.workspace_name || workspacePlaceholder);
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-[#030407] px-4">
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.012)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.012)_1px,transparent_1px)] bg-[size:32px_32px] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_50%,#000_70%,transparent_100%)]" />
-        <div className="pointer-events-none absolute left-1/2 top-[-10%] h-[500px] w-[800px] -translate-x-1/2 rounded-full bg-[radial-gradient(circle,rgba(124,140,255,0.08)_0%,transparent_60%)] blur-[70px]" />
-        
-        <div className="relative z-10 w-full max-w-[440px] rounded-2xl border border-border bg-[#0a0e14]/75 p-8 shadow-[0_24px_80px_rgba(0,0,0,0.85)] backdrop-blur-[12px]">
+      <div className="relative flex min-h-screen items-center justify-center bg-black px-4">
+        <div className="relative z-10 w-full max-w-[440px] rounded-2xl border border-[#27272a] bg-[#0a0a0a] p-8">
           <ApiKeyReveal
             apiKey={apiKey}
             onContinue={() => {
@@ -180,175 +230,191 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col md:flex-row bg-[#030407]">
-      {/* LEFT COLUMN: Clean, Centered Form */}
-      <div className="flex flex-1 flex-col justify-between px-6 py-12 sm:px-12 md:px-16 lg:px-20">
-        {/* Top Header Label */}
-        <div className="flex items-center gap-3">
+    <div className="flex min-h-screen flex-col bg-black md:flex-row">
+      {/* Left: form */}
+      <div className="flex flex-1 flex-col justify-between px-6 py-10 sm:px-12 md:px-16 lg:px-20">
+        <div className="flex items-center gap-2.5">
           <Image
             src="/logo-dark.png"
             alt="Histeeria"
-            width={24}
-            height={24}
-            className="h-6 w-auto object-contain select-none"
+            width={20}
+            height={20}
+            className="h-5 w-auto object-contain select-none opacity-90"
           />
-          <span className="font-mono text-xs uppercase tracking-[0.25em] text-gold font-bold select-none">
-            Histeeria
-          </span>
+          <span className="text-[13px] font-medium text-[#71717a] select-none">Histeeria</span>
         </div>
 
-        {/* Center Form Section */}
         <div className="mx-auto my-auto w-full max-w-[380px] py-8">
           <AnimatePresence mode="wait">
             <motion.div
               key={step}
-              initial={{ opacity: 0, x: 12 }}
-              animate={{ opacity: 1, x: 0 }}
-              exit={{ opacity: 0, x: -12 }}
-              transition={{ duration: 0.2, ease: "easeOut" }}
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -8 }}
+              transition={{ duration: 0.18, ease: "easeOut" }}
               className="space-y-6"
             >
-              {/* Step 1: Create your workspace */}
               {step === 1 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground select-none">
+                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
                       Create your workspace
                     </h1>
-                    <p className="text-[13px] leading-relaxed text-muted select-none">
-                      Start by naming your team space inside Histeeria.
+                    <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
+                      Name your team space and choose a unique URL slug.
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <Input
-                      label="Workspace Name"
-                      name="workspace_name"
-                      placeholder={workspacePlaceholder}
-                      value={form.workspace_name}
-                      onChange={(event) => updateField("workspace_name", event.target.value)}
-                      error={errors.workspace_name}
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="workspace_name" className={labelClass}>
+                        Workspace name
+                      </label>
+                      <input
+                        id="workspace_name"
+                        name="workspace_name"
+                        placeholder={workspacePlaceholder}
+                        value={form.workspace_name}
+                        onChange={(event) => updateField("workspace_name", event.target.value)}
+                        className={fieldClass}
+                      />
+                      {errors.workspace_name ? (
+                        <p className="text-xs text-[#f87171]">{errors.workspace_name}</p>
+                      ) : null}
+                    </div>
 
                     <div className="space-y-2">
-                      <label className="block text-xs font-semibold uppercase tracking-wide text-muted select-none">
-                        Workspace Slug
+                      <label htmlFor="workspace_slug" className={labelClass}>
+                        Workspace slug
                       </label>
-                      <div className="flex rounded-lg border border-border-strong bg-[#131a26] overflow-hidden focus-within:ring-2 focus-within:ring-accent-soft focus-within:border-accent/70 transition">
-                        <span className="flex items-center bg-[#0d131f] border-r border-border-strong/60 px-3 py-2 text-xs font-mono text-muted/65 select-none">
+                      <div className="flex overflow-hidden rounded-[10px] border border-[#27272a] bg-[#141414] focus-within:border-[#3f3f46]">
+                        <span className="flex items-center border-r border-[#27272a] bg-[#0f0f0f] px-3 py-2.5 text-xs font-mono text-[#52525b] select-none">
                           app.histeeria.com/
                         </span>
                         <input
+                          id="workspace_slug"
                           type="text"
                           name="workspace_slug"
                           placeholder={slugify(workspacePlaceholder)}
                           value={form.workspace_slug}
-                          onChange={(e) => updateField("workspace_slug", slugify(e.target.value))}
-                          className="flex-1 bg-transparent px-3 py-2 text-xs font-mono text-foreground outline-none border-none placeholder-muted/40"
+                          onChange={(e) => {
+                            slugManuallyEdited.current = true;
+                            updateField("workspace_slug", slugify(e.target.value));
+                          }}
+                          className="flex-1 bg-transparent px-3 py-2.5 text-xs font-mono text-[#ededed] outline-none placeholder:text-[#52525b]"
                         />
                       </div>
                       {errors.workspace_slug ? (
-                        <p className="text-xs text-danger">{errors.workspace_slug}</p>
-                      ) : null}
+                        <p className="text-xs text-[#f87171]">{errors.workspace_slug}</p>
+                      ) : (
+                        <p className="text-xs text-[#52525b]">Must be unique across all workspaces.</p>
+                      )}
                     </div>
 
-                    {/* Team Size beautiful custom selector */}
-                    <div className="space-y-2.5">
-                      <label className="block text-xs font-semibold uppercase tracking-wide text-muted select-none">
-                        Team Size
+                    <div className="space-y-2">
+                      <label htmlFor="team_size" className={labelClass}>
+                        Team size
                       </label>
                       <select
+                        id="team_size"
                         value={form.team_size}
                         onChange={(e) => updateField("team_size", e.target.value)}
-                        className="w-full rounded-lg border border-border-strong bg-[#131a26] px-3.5 py-2.5 text-xs text-foreground outline-none transition focus:border-accent/70 focus:bg-[#1a2331] focus:ring-2 focus:ring-accent-soft cursor-pointer"
+                        className={cn(fieldClass, "cursor-pointer")}
                       >
-                        <option value="1">Just me (1 person)</option>
-                        <option value="2-5">Small team (2 - 5 people)</option>
-                        <option value="6-15">Growing team (6 - 15 people)</option>
-                        <option value="16-50">Scale team (16 - 50 people)</option>
-                        <option value="50+">Enterprise (50+ people)</option>
+                        <option value="1">Just me</option>
+                        <option value="2-5">2 – 5 people</option>
+                        <option value="6-15">6 – 15 people</option>
+                        <option value="16-50">16 – 50 people</option>
+                        <option value="50+">50+ people</option>
                       </select>
                     </div>
                   </div>
                 </div>
               ) : null}
 
-              {/* Step 2: Invite Teammates */}
               {step === 2 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <div className="flex items-center justify-between">
-                      <h1 className="text-2xl font-semibold tracking-tight text-foreground select-none">
+                    <div className="flex items-center justify-between gap-3">
+                      <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
                         Invite teammates
                       </h1>
                       <button
                         type="button"
                         onClick={handleCopyInviteLink}
-                        className="flex items-center gap-1.5 text-xs text-accent hover:text-accent/80 font-medium transition cursor-pointer select-none"
+                        className="flex items-center gap-1.5 text-xs text-[#a1a1aa] hover:text-[#ededed] transition cursor-pointer select-none"
                       >
-                        {copiedLink ? (
-                          <Check className="h-3 w-3" />
-                        ) : (
-                          <Link2 className="h-3 w-3" />
-                        )}
-                        {copiedLink ? "Link copied" : "Copy invite link"}
+                        {copiedLink ? <Check className="h-3 w-3" /> : <Link2 className="h-3 w-3" />}
+                        {copiedLink ? "Copied" : "Copy invite link"}
                       </button>
                     </div>
-                    <p className="text-[13px] leading-relaxed text-muted select-none">
-                      Get your team on Histeeria to start observing decisions.
+                    <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
+                      Get your team on Histeeria to start working. This step is optional.
                     </p>
                   </div>
 
-                  <div className="space-y-4">
-                    <Textarea
-                      label="Invitations"
+                  <div className="space-y-2">
+                    <label htmlFor="team_members" className={labelClass}>
+                      Invitations
+                    </label>
+                    <textarea
+                      id="team_members"
                       name="team_members"
                       placeholder="email@gmail.com, email2@gmail.com"
                       value={form.team_members}
                       onChange={(event) => updateField("team_members", event.target.value)}
-                      error={errors.team_members}
-                      hint="Enter emails separated by commas."
+                      className={cn(fieldClass, "min-h-[120px] resize-none")}
                     />
                   </div>
                 </div>
               ) : null}
 
-              {/* Step 3: Configure Agent */}
               {step === 3 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground select-none">
+                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
                       Configure your first agent
                     </h1>
-                    <p className="text-[13px] leading-relaxed text-muted select-none">
-                      Configure your primary agent context so we can start observing decisions.
+                    <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
+                      Define your agent&apos;s name, domain, and description.
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <Input
-                      label="Agent Name"
-                      name="agent_name"
-                      placeholder="Acme Support Copilot"
-                      value={form.agent_name}
-                      onChange={(event) => updateField("agent_name", event.target.value)}
-                      error={errors.agent_name}
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="agent_name" className={labelClass}>
+                        Agent name
+                      </label>
+                      <input
+                        id="agent_name"
+                        name="agent_name"
+                        placeholder="Support Copilot"
+                        value={form.agent_name}
+                        onChange={(event) => updateField("agent_name", event.target.value)}
+                        className={fieldClass}
+                      />
+                      {errors.agent_name ? (
+                        <p className="text-xs text-[#f87171]">{errors.agent_name}</p>
+                      ) : null}
+                    </div>
 
-                    {/* Domain Select Box */}
-                    <div className="space-y-2.5">
-                      <label className="block text-xs font-semibold uppercase tracking-wide text-muted select-none">
-                        Agent Domain
+                    <div className="space-y-2">
+                      <label htmlFor="domain_name" className={labelClass}>
+                        Agent domain
                       </label>
                       <select
+                        id="domain_name"
                         value={form.domain_name}
                         onChange={(e) => updateField("domain_name", e.target.value)}
                         className={cn(
-                          "w-full rounded-lg border border-border-strong bg-[#131a26] px-3.5 py-2.5 text-xs outline-none transition focus:border-accent/70 focus:bg-[#1a2331] focus:ring-2 focus:ring-accent-soft cursor-pointer",
-                          !form.domain_name ? "text-muted/70" : "text-foreground"
+                          fieldClass,
+                          "cursor-pointer",
+                          !form.domain_name ? "text-[#52525b]" : "text-[#ededed]",
                         )}
                       >
-                        <option value="" disabled>Select a domain...</option>
+                        <option value="" disabled>
+                          Select a domain...
+                        </option>
                         {DOMAINS.map((domain) => (
                           <option key={domain.value} value={domain.value}>
                             {domain.label}
@@ -356,62 +422,86 @@ export function OnboardingFlow() {
                         ))}
                       </select>
                       {errors.domain_name ? (
-                        <p className="text-xs text-danger">{errors.domain_name}</p>
+                        <p className="text-xs text-[#f87171]">{errors.domain_name}</p>
                       ) : null}
                     </div>
 
-                    <Textarea
-                      label="What does your agent do?"
-                      name="agent_description"
-                      placeholder="Describe the context, tasks, and system prompts of your model..."
-                      value={form.agent_description}
-                      onChange={(event) => updateField("agent_description", event.target.value)}
-                      error={errors.agent_description}
-                      hint="Minimum 10 characters."
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="agent_description" className={labelClass}>
+                        What does your agent do?
+                      </label>
+                      <textarea
+                        id="agent_description"
+                        name="agent_description"
+                        placeholder="Describe the context, tasks, and system prompts of your model..."
+                        value={form.agent_description}
+                        onChange={(event) => updateField("agent_description", event.target.value)}
+                        className={cn(fieldClass, "min-h-[100px] resize-none")}
+                      />
+                      {errors.agent_description ? (
+                        <p className="text-xs text-[#f87171]">{errors.agent_description}</p>
+                      ) : null}
+                    </div>
                   </div>
                 </div>
               ) : null}
 
-              {/* Step 4: Set up profile */}
               {step === 4 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-2xl font-semibold tracking-tight text-foreground select-none">
+                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
                       Set up your profile
                     </h1>
-                    <p className="text-[13px] leading-relaxed text-muted select-none">
-                      Tell us a bit about yourself to finalize your workspace setup.
+                    <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
+                      Choose how you&apos;ll appear in Histeeria.
                     </p>
                   </div>
 
                   <div className="space-y-4">
-                    <Input
-                      label="Your Full Name"
-                      name="full_name"
-                      placeholder="Alex Mercer"
-                      value={form.full_name || session?.user?.name || ""}
-                      onChange={(event) => updateField("full_name", event.target.value)}
-                      error={errors.full_name}
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="full_name" className={labelClass}>
+                        Name
+                      </label>
+                      <input
+                        id="full_name"
+                        name="full_name"
+                        placeholder="Alex Mercer"
+                        value={form.full_name || session?.user?.name || ""}
+                        onChange={(event) => updateField("full_name", event.target.value)}
+                        className={fieldClass}
+                      />
+                      {errors.full_name ? (
+                        <p className="text-xs text-[#f87171]">{errors.full_name}</p>
+                      ) : null}
+                    </div>
 
-                    <Input
-                      label="Role / Title"
-                      name="role"
-                      placeholder="AI Engineer"
-                      value={form.role}
-                      onChange={(event) => updateField("role", event.target.value)}
-                      error={errors.role}
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="role" className={labelClass}>
+                        Title
+                      </label>
+                      <input
+                        id="role"
+                        name="role"
+                        placeholder="Software engineer"
+                        value={form.role}
+                        onChange={(event) => updateField("role", event.target.value)}
+                        className={fieldClass}
+                      />
+                    </div>
 
-                    <Input
-                      label="Where did you hear about us?"
-                      name="heard_from"
-                      placeholder="X (Twitter), GitHub, Friend, etc."
-                      value={form.heard_from}
-                      onChange={(event) => updateField("heard_from", event.target.value)}
-                      error={errors.heard_from}
-                    />
+                    <div className="space-y-2">
+                      <label htmlFor="heard_from" className={labelClass}>
+                        Where did you hear about us?
+                      </label>
+                      <input
+                        id="heard_from"
+                        name="heard_from"
+                        placeholder="Twitter, GitHub, a friend..."
+                        value={form.heard_from}
+                        onChange={(event) => updateField("heard_from", event.target.value)}
+                        className={fieldClass}
+                      />
+                    </div>
                   </div>
                 </div>
               ) : null}
@@ -419,102 +509,81 @@ export function OnboardingFlow() {
           </AnimatePresence>
 
           {submitError ? (
-            <div className="mt-5 rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-xs text-danger text-center">
+            <div className="mt-5 rounded-[10px] border border-[#3f3f46] bg-[#141414] px-4 py-3 text-xs text-[#f87171] text-center">
               {submitError}
             </div>
           ) : null}
 
-          {/* Action buttons matching split screen layout */}
-          <div className="mt-8 flex items-center justify-between gap-3">
-            {step > 1 ? (
-              <Button
+          <div className="mt-8 flex items-center justify-end gap-4">
+            {step === 2 ? (
+              <button
                 type="button"
-                variant="ghost"
-                disabled={submitting}
+                disabled={submitting || checkingSlug}
+                onClick={handleSkipInvites}
+                className="text-[13px] text-[#71717a] hover:text-[#ededed] transition cursor-pointer disabled:opacity-50"
+              >
+                Skip
+              </button>
+            ) : step > 1 ? (
+              <button
+                type="button"
+                disabled={submitting || checkingSlug}
                 onClick={() => setStep((current) => Math.max(1, current - 1))}
-                className="text-muted hover:text-foreground text-sm"
+                className="text-[13px] text-[#71717a] hover:text-[#ededed] transition cursor-pointer disabled:opacity-50"
               >
                 Back
-              </Button>
-            ) : (
-              <div className="w-12" />
-            )}
+              </button>
+            ) : null}
 
-            <Button
+            <button
               type="button"
               onClick={handleNext}
-              disabled={submitting}
-              className="px-6 rounded-lg text-xs bg-accent text-white font-medium shadow-[0_10px_30px_rgba(124,140,255,0.22)] hover:bg-[#7181f4]"
+              disabled={submitting || checkingSlug}
+              className="rounded-full bg-[#27272a] px-5 py-2 text-[13px] font-medium text-[#fafafa] transition hover:bg-[#3f3f46] disabled:opacity-60 cursor-pointer"
             >
-              {submitting ? (
+              {submitting || checkingSlug ? (
                 <span className="flex items-center gap-2">
-                  <span className="h-4 w-4 animate-spin rounded-full border-2 border-white border-t-transparent" />
-                  Creating...
+                  <span className="h-3.5 w-3.5 animate-spin rounded-full border-2 border-[#71717a] border-t-transparent" />
+                  {primaryLabel}
                 </span>
-              ) : step === 2 ? (
-                "Send Invitations"
-              ) : step === 4 ? (
-                "Complete onboarding"
               ) : (
-                "Continue"
+                primaryLabel
               )}
-            </Button>
+            </button>
           </div>
         </div>
 
-        {/* 4 dots navigation indicating active onboarding step */}
+        {/* Progress dots */}
         <div className="flex justify-center gap-2 select-none">
           {[1, 2, 3, 4].map((i) => (
-            <button
+            <div
               key={i}
-              type="button"
-              onClick={() => {
-                if (i < step || validateStep(step)) {
-                  setStep(i);
-                }
-              }}
-              disabled={submitting}
               className={cn(
                 "h-1.5 rounded-full transition-all duration-300",
-                step === i ? "w-6 bg-accent" : "w-1.5 bg-border-strong hover:bg-muted"
+                step === i ? "w-6 bg-[#fafafa]" : "w-1.5 bg-[#3f3f46]",
               )}
             />
           ))}
         </div>
       </div>
 
-      {/* RIGHT COLUMN: Premium Ambient Light & Large Faded Logo Mockup */}
-      <div className="relative hidden md:flex flex-1 flex-col items-center justify-center overflow-hidden border-l border-border bg-[#05060b]">
-        {/* Subtle grid backdrop */}
-        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(rgba(255,255,255,0.008)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,0.008)_1px,transparent_1px)] bg-[size:24px_24px]" />
-        
-        {/* Epic center light projection */}
-        <div className="pointer-events-none absolute left-1/2 top-1/2 h-[500px] w-[500px] -translate-x-1/2 -translate-y-1/2 rounded-full bg-[radial-gradient(circle,rgba(124,140,255,0.07)_0%,transparent_60%)] blur-[50px]" />
-        
-        {/* Abstract orbits */}
-        <div className="absolute h-[340px] w-[340px] rounded-full border border-border/25 animate-[spin_60s_linear_infinite]" />
-        <div className="absolute h-[500px] w-[500px] rounded-full border border-dashed border-border/10 animate-[spin_120s_linear_infinite]" />
-
-        {/* Faded logo mockup */}
-        <div className="relative z-10 flex flex-col items-center space-y-4 opacity-[0.8]">
-          <div className="relative flex h-24 w-24 items-center justify-center rounded-full border border-border bg-[#0a0e14]/50 shadow-2xl backdrop-blur-sm">
+      {/* Right: ambient panel */}
+      <div className="relative hidden flex-1 overflow-hidden border-l border-[#181818] bg-black md:flex md:items-center md:justify-center">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,transparent_55%)]" />
+        <div className="relative z-10 flex flex-col items-center space-y-5 opacity-70">
+          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#27272a] bg-[#0a0a0a]">
             <Image
               src="/logo-dark.png"
               alt="Histeeria"
-              width={56}
-              height={56}
+              width={44}
+              height={44}
               priority
-              className="h-14 w-auto object-contain select-none"
+              className="h-11 w-auto object-contain select-none"
             />
           </div>
-          <div className="space-y-1 text-center">
-            <h2 className="font-mono text-lg font-bold tracking-[0.2em] text-foreground uppercase select-none">
-              Histeeria
-            </h2>
-            <p className="text-[12px] font-medium tracking-wide text-muted/75 select-none">
-              Infrastructure for machine judgment.
-            </p>
-          </div>
+          <p className="text-[12px] font-medium tracking-wide text-[#52525b] select-none">
+            Infrastructure for machine judgment
+          </p>
         </div>
       </div>
     </div>
