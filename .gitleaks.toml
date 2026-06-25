@@ -1,0 +1,18 @@
+title = "Histeeria gitleaks config"
+
+[extend]
+useDefault = true
+
+[allowlist]
+description = "CI placeholders"
+paths = [
+  '''(?:^|/)\.github/workflows/.*\.ya?ml$''',
+]
+
+[allowlist.regexes]
+description = "Non-production CI placeholder values"
+regexes = [
+  '''ci-test-''',
+  '''ci-github-''',
+  '''ci-google-''',
+]
