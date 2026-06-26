@@ -14,6 +14,7 @@ import {
   YAxis,
 } from "recharts";
 
+import { profileThemeClass, useProfileTheme } from "@/components/agents/public-profile-theme";
 import type {
   CommonFlagItem,
   CostTrendPoint,
@@ -23,15 +24,25 @@ import type {
 } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-const CHART_COLORS = {
-  line: "#fafafa",
-  grid: "#27272a",
-  radar: "#86efac",
-  cost: "#60a5fa",
-  tokens: "#a78bfa",
-};
+function useChartTheme() {
+  const { isLight } = useProfileTheme();
+  return {
+    isLight,
+    line: isLight ? "#18181b" : "#fafafa",
+    grid: isLight ? "#e4e4e7" : "#27272a",
+    tick: "#71717a",
+    tooltipBg: isLight ? "#ffffff" : "#0a0a0a",
+    tooltipBorder: isLight ? "#e4e4e7" : "#27272a",
+    tooltipLabel: isLight ? "#52525b" : "#a1a1aa",
+    radar: "#86efac",
+    cost: "#60a5fa",
+    tokens: "#a78bfa",
+  };
+}
 
 export function JudgmentGraph({ points }: { points: GraphPoint[] }) {
+  const theme = useChartTheme();
+
   if (points.length === 0) {
     return <EmptyChart message="No judgment history yet. Evaluations will appear here over 90 days." />;
   }
@@ -46,25 +57,25 @@ export function JudgmentGraph({ points }: { points: GraphPoint[] }) {
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis domain={[0, 10]} tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
+          <CartesianGrid stroke={theme.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="date" tick={{ fill: theme.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis domain={[0, 10]} tick={{ fill: theme.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
           <Tooltip
             contentStyle={{
-              background: "#0a0a0a",
-              border: "1px solid #27272a",
+              background: theme.tooltipBg,
+              border: `1px solid ${theme.tooltipBorder}`,
               borderRadius: 8,
               fontSize: 12,
             }}
-            labelStyle={{ color: "#a1a1aa" }}
+            labelStyle={{ color: theme.tooltipLabel }}
           />
           <Line
             type="monotone"
             dataKey="score"
-            stroke={CHART_COLORS.line}
+            stroke={theme.line}
             strokeWidth={2}
             dot={false}
-            activeDot={{ r: 4, fill: "#fafafa" }}
+            activeDot={{ r: 4, fill: theme.line }}
           />
         </LineChart>
       </ResponsiveContainer>
@@ -73,6 +84,8 @@ export function JudgmentGraph({ points }: { points: GraphPoint[] }) {
 }
 
 export function DimensionRadar({ judgement }: { judgement: ProfileDashboardJudgement }) {
+  const theme = useChartTheme();
+
   const data = judgement.dimensions
     .filter((d) => d.mean !== null)
     .map((d) => ({ dimension: d.label.split(" ")[0], score: d.mean, fullLabel: d.label }));
@@ -85,19 +98,19 @@ export function DimensionRadar({ judgement }: { judgement: ProfileDashboardJudge
     <div className="h-72 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <RadarChart data={data}>
-          <PolarGrid stroke={CHART_COLORS.grid} />
-          <PolarAngleAxis dataKey="dimension" tick={{ fill: "#71717a", fontSize: 10 }} />
+          <PolarGrid stroke={theme.grid} />
+          <PolarAngleAxis dataKey="dimension" tick={{ fill: theme.tick, fontSize: 10 }} />
           <Radar
             name="Score"
             dataKey="score"
-            stroke={CHART_COLORS.radar}
-            fill={CHART_COLORS.radar}
+            stroke={theme.radar}
+            fill={theme.radar}
             fillOpacity={0.25}
           />
           <Tooltip
             contentStyle={{
-              background: "#0a0a0a",
-              border: "1px solid #27272a",
+              background: theme.tooltipBg,
+              border: `1px solid ${theme.tooltipBorder}`,
               borderRadius: 8,
               fontSize: 12,
             }}
@@ -109,6 +122,8 @@ export function DimensionRadar({ judgement }: { judgement: ProfileDashboardJudge
 }
 
 export function CostTrendChart({ points }: { points: CostTrendPoint[] }) {
+  const theme = useChartTheme();
+
   if (points.length === 0) {
     return <EmptyChart message="Cost and token trends appear after evaluations run." />;
   }
@@ -123,30 +138,30 @@ export function CostTrendChart({ points }: { points: CostTrendPoint[] }) {
     <div className="h-64 w-full">
       <ResponsiveContainer width="100%" height="100%">
         <LineChart data={data} margin={{ top: 8, right: 8, left: -16, bottom: 0 }}>
-          <CartesianGrid stroke={CHART_COLORS.grid} strokeDasharray="3 3" vertical={false} />
-          <XAxis dataKey="date" tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
-          <YAxis yAxisId="cost" tick={{ fill: "#71717a", fontSize: 11 }} axisLine={false} tickLine={false} />
+          <CartesianGrid stroke={theme.grid} strokeDasharray="3 3" vertical={false} />
+          <XAxis dataKey="date" tick={{ fill: theme.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
+          <YAxis yAxisId="cost" tick={{ fill: theme.tick, fontSize: 11 }} axisLine={false} tickLine={false} />
           <YAxis
             yAxisId="tokens"
             orientation="right"
-            tick={{ fill: "#71717a", fontSize: 11 }}
+            tick={{ fill: theme.tick, fontSize: 11 }}
             axisLine={false}
             tickLine={false}
           />
           <Tooltip
             contentStyle={{
-              background: "#0a0a0a",
-              border: "1px solid #27272a",
+              background: theme.tooltipBg,
+              border: `1px solid ${theme.tooltipBorder}`,
               borderRadius: 8,
               fontSize: 12,
             }}
           />
-          <Line yAxisId="cost" type="monotone" dataKey="cost" stroke={CHART_COLORS.cost} strokeWidth={2} dot={false} />
+          <Line yAxisId="cost" type="monotone" dataKey="cost" stroke={theme.cost} strokeWidth={2} dot={false} />
           <Line
             yAxisId="tokens"
             type="monotone"
             dataKey="tokens"
-            stroke={CHART_COLORS.tokens}
+            stroke={theme.tokens}
             strokeWidth={2}
             dot={false}
           />
@@ -157,8 +172,14 @@ export function CostTrendChart({ points }: { points: CostTrendPoint[] }) {
 }
 
 export function CommonFlagsList({ flags }: { flags: CommonFlagItem[] }) {
+  const { isLight } = useProfileTheme();
+
   if (flags.length === 0) {
-    return <p className="text-[13px] text-[#71717a]">No recurring flags yet.</p>;
+    return (
+      <p className={cn("text-[13px]", profileThemeClass(isLight, "text-[#71717a]", "text-[#71717a]"))}>
+        No recurring flags yet.
+      </p>
+    );
   }
 
   return (
@@ -166,15 +187,25 @@ export function CommonFlagsList({ flags }: { flags: CommonFlagItem[] }) {
       {flags.map((flag) => (
         <div
           key={flag.label}
-          className="flex items-center justify-between rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2"
+          className={cn(
+            "flex items-center justify-between rounded-[8px] border px-3 py-2",
+            profileThemeClass(isLight, "border-[#27272a] bg-[#141414]", "border-[#e4e4e7] bg-[#fafafa]"),
+          )}
         >
           <div>
-            <p className="text-[13px] text-[#fafafa]">{flag.label}</p>
-            <p className="text-[11px] capitalize text-[#52525b]">
+            <p className={cn("text-[13px]", profileThemeClass(isLight, "text-[#fafafa]", "text-[#18181b]"))}>
+              {flag.label}
+            </p>
+            <p className={cn("text-[11px] capitalize", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>
               {flag.dimension.replace(/_/g, " ")} · {flag.severity}
             </p>
           </div>
-          <span className="rounded-full bg-[#27272a] px-2 py-0.5 text-[11px] tabular-nums text-[#a1a1aa]">
+          <span
+            className={cn(
+              "rounded-full px-2 py-0.5 text-[11px] tabular-nums",
+              profileThemeClass(isLight, "bg-[#27272a] text-[#a1a1aa]", "bg-[#e4e4e7] text-[#52525b]"),
+            )}
+          >
             {flag.count}×
           </span>
         </div>
@@ -184,14 +215,26 @@ export function CommonFlagsList({ flags }: { flags: CommonFlagItem[] }) {
 }
 
 export function WorstDecisionsList({ items }: { items: WorstDecisionItem[] }) {
+  const { isLight } = useProfileTheme();
+
   if (items.length === 0) {
-    return <p className="text-[13px] text-[#71717a]">No evaluated decisions yet.</p>;
+    return (
+      <p className={cn("text-[13px]", profileThemeClass(isLight, "text-[#71717a]", "text-[#71717a]"))}>
+        No evaluated decisions yet.
+      </p>
+    );
   }
 
   return (
     <div className="space-y-3">
       {items.map((item) => (
-        <div key={item.evaluation_id} className="rounded-[10px] border border-[#27272a] bg-[#141414] p-4">
+        <div
+          key={item.evaluation_id}
+          className={cn(
+            "rounded-[10px] border p-4",
+            profileThemeClass(isLight, "border-[#27272a] bg-[#141414]", "border-[#e4e4e7] bg-[#fafafa]"),
+          )}
+        >
           <div className="flex items-center justify-between gap-3">
             <span
               className={cn(
@@ -203,18 +246,20 @@ export function WorstDecisionsList({ items }: { items: WorstDecisionItem[] }) {
             >
               {item.overall?.toFixed(1) ?? "—"}
             </span>
-            <span className="text-[11px] text-[#52525b]">
+            <span className={cn("text-[11px]", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>
               {new Date(item.evaluated_at).toLocaleString()}
             </span>
           </div>
-          <p className="mt-3 text-[12px] text-[#a1a1aa]">
-            <span className="text-[#52525b]">Input:</span> {item.input_preview}
+          <p className={cn("mt-3 text-[12px]", profileThemeClass(isLight, "text-[#a1a1aa]", "text-[#52525b]"))}>
+            <span className={profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]")}>Input:</span>{" "}
+            {item.input_preview}
           </p>
-          <p className="mt-1 text-[12px] text-[#a1a1aa]">
-            <span className="text-[#52525b]">Output:</span> {item.output_preview}
+          <p className={cn("mt-1 text-[12px]", profileThemeClass(isLight, "text-[#a1a1aa]", "text-[#52525b]"))}>
+            <span className={profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]")}>Output:</span>{" "}
+            {item.output_preview}
           </p>
           {item.flags.length > 0 ? (
-            <p className="mt-2 text-[11px] text-[#71717a]">
+            <p className={cn("mt-2 text-[11px]", profileThemeClass(isLight, "text-[#71717a]", "text-[#71717a]"))}>
               {item.flags.length} flag{item.flags.length === 1 ? "" : "s"} raised
             </p>
           ) : null}
@@ -225,9 +270,16 @@ export function WorstDecisionsList({ items }: { items: WorstDecisionItem[] }) {
 }
 
 function EmptyChart({ message }: { message: string }) {
+  const { isLight } = useProfileTheme();
+
   return (
-    <div className="flex h-64 items-center justify-center rounded-[10px] border border-dashed border-[#27272a] px-6 text-center">
-      <p className="text-[13px] text-[#71717a]">{message}</p>
+    <div
+      className={cn(
+        "flex h-64 items-center justify-center rounded-[10px] border border-dashed px-6 text-center",
+        profileThemeClass(isLight, "border-[#27272a]", "border-[#d4d4d8]"),
+      )}
+    >
+      <p className={cn("text-[13px]", profileThemeClass(isLight, "text-[#71717a]", "text-[#71717a]"))}>{message}</p>
     </div>
   );
 }
@@ -248,29 +300,37 @@ export function ProfileGradeHeader({
   judgement: ProfileDashboardJudgement | null;
   showSummary: boolean;
 }) {
+  const { isLight } = useProfileTheme();
+
   if (!showSummary || !judgement) return null;
 
   return (
     <div className="flex flex-wrap items-end gap-6">
       <div>
-        <p className="text-[11px] uppercase tracking-wide text-[#52525b]">Judgment grade</p>
+        <p className={cn("text-[11px] uppercase tracking-wide", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>
+          Judgment grade
+        </p>
         <p className={cn("text-[42px] font-medium leading-none", gradeColor(judgement.grade))}>
           {judgement.grade}
         </p>
       </div>
       <div>
-        <p className="text-[11px] text-[#52525b]">Overall</p>
-        <p className="text-[24px] font-medium tabular-nums text-[#fafafa]">
+        <p className={cn("text-[11px]", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>Overall</p>
+        <p className={cn("text-[24px] font-medium tabular-nums", profileThemeClass(isLight, "text-[#fafafa]", "text-[#18181b]"))}>
           {judgement.overall?.toFixed(1) ?? "—"}
         </p>
       </div>
       <div>
-        <p className="text-[11px] text-[#52525b]">Evaluated</p>
-        <p className="text-[24px] font-medium tabular-nums text-[#fafafa]">{judgement.evaluated_count}</p>
+        <p className={cn("text-[11px]", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>Evaluated</p>
+        <p className={cn("text-[24px] font-medium tabular-nums", profileThemeClass(isLight, "text-[#fafafa]", "text-[#18181b]"))}>
+          {judgement.evaluated_count}
+        </p>
       </div>
       <div>
-        <p className="text-[11px] text-[#52525b]">Streak</p>
-        <p className="text-[24px] font-medium tabular-nums text-[#fafafa]">{judgement.current_streak}</p>
+        <p className={cn("text-[11px]", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>Streak</p>
+        <p className={cn("text-[24px] font-medium tabular-nums", profileThemeClass(isLight, "text-[#fafafa]", "text-[#18181b]"))}>
+          {judgement.current_streak}
+        </p>
       </div>
     </div>
   );

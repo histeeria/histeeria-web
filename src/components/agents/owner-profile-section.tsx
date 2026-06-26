@@ -2,9 +2,11 @@
 
 import { Mail } from "lucide-react";
 
+import { profileThemeClass, useProfileTheme } from "@/components/agents/public-profile-theme";
 import { SocialLinkButton } from "@/components/agents/social-link-icon";
 import type { OwnerProfile } from "@/lib/api";
 import { normalizeSocialLink, type SocialPlatform } from "@/lib/social-links";
+import { cn } from "@/lib/utils";
 
 const SOCIAL_ORDER: SocialPlatform[] = [
   "linkedin",
@@ -17,6 +19,8 @@ const SOCIAL_ORDER: SocialPlatform[] = [
 ];
 
 export function OwnerProfileSection({ owner }: { owner: OwnerProfile }) {
+  const { isLight } = useProfileTheme();
+
   const links = SOCIAL_ORDER.map((platform) => {
     const href = normalizeSocialLink(platform, owner.social[platform]);
     if (!href) return null;
@@ -33,23 +37,40 @@ export function OwnerProfileSection({ owner }: { owner: OwnerProfile }) {
         <img
           src={owner.avatar_url}
           alt={owner.name ?? "Builder"}
-          className="h-24 w-24 shrink-0 rounded-2xl border border-[#27272a] object-cover"
+          className={cn(
+            "h-24 w-24 shrink-0 rounded-2xl border object-cover",
+            profileThemeClass(isLight, "border-[#27272a]", "border-[#e4e4e7]"),
+          )}
         />
       ) : (
-        <div className="flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border border-[#27272a] bg-[#141414] text-[28px] font-medium text-[#71717a]">
+        <div
+          className={cn(
+            "flex h-24 w-24 shrink-0 items-center justify-center rounded-2xl border text-[28px] font-medium",
+            profileThemeClass(isLight, "border-[#27272a] bg-[#141414] text-[#71717a]", "border-[#e4e4e7] bg-[#f4f4f5] text-[#a1a1aa]"),
+          )}
+        >
           {(owner.name?.[0] ?? "B").toUpperCase()}
         </div>
       )}
       <div className="min-w-0 flex-1">
-        <p className="text-[11px] uppercase tracking-[0.2em] text-[#52525b]">Built by</p>
-        <h3 className="mt-1 text-[24px] font-medium text-[#fafafa]">{owner.name ?? "Anonymous builder"}</h3>
+        <p className={cn("text-[11px] uppercase tracking-[0.2em]", profileThemeClass(isLight, "text-[#52525b]", "text-[#a1a1aa]"))}>
+          Built by
+        </p>
+        <h3 className={cn("mt-1 text-[24px] font-medium", profileThemeClass(isLight, "text-[#fafafa]", "text-[#18181b]"))}>
+          {owner.name ?? "Anonymous builder"}
+        </h3>
         {owner.description ? (
-          <p className="mt-3 max-w-2xl text-[15px] leading-relaxed text-[#a1a1aa]">{owner.description}</p>
+          <p className={cn("mt-3 max-w-2xl text-[15px] leading-relaxed", profileThemeClass(isLight, "text-[#a1a1aa]", "text-[#52525b]"))}>
+            {owner.description}
+          </p>
         ) : null}
         {owner.email ? (
           <a
             href={`mailto:${owner.email}`}
-            className="mt-4 inline-flex cursor-pointer items-center gap-2 text-[13px] text-[#d4d4d8] hover:text-[#fafafa]"
+            className={cn(
+              "mt-4 inline-flex cursor-pointer items-center gap-2 text-[13px] transition",
+              profileThemeClass(isLight, "text-[#d4d4d8] hover:text-[#fafafa]", "text-[#52525b] hover:text-[#18181b]"),
+            )}
           >
             <Mail className="h-4 w-4" />
             {owner.email}

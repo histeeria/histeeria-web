@@ -21,6 +21,7 @@ interface MediaUploadFieldProps {
   variant?: "image" | "video";
   previewClassName?: string;
   allowUrl?: boolean;
+  layout?: "card" | "compact";
 }
 
 function validateFile(file: File, variant: "image" | "video") {
@@ -130,6 +131,7 @@ export function MediaUploadField({
   variant = "image",
   previewClassName,
   allowUrl = true,
+  layout = "card",
 }: MediaUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -175,75 +177,90 @@ export function MediaUploadField({
 
   const sizeHint = variant === "image" ? "JPG or PNG · max 2 MB" : "MP4 or WebM · max 5 MB";
 
+  const uploadControls = (
+    <>
+      <div
+        onDragOver={(e) => {
+          e.preventDefault();
+          setDragging(true);
+        }}
+        onDragLeave={() => setDragging(false)}
+        onDrop={onDrop}
+        className={cn(
+          "rounded-[12px] border border-dashed p-4 transition",
+          dragging ? "border-[#71717a] bg-[#141414]" : "border-[#27272a] bg-[#0a0a0a]",
+        )}
+      >
+        {allowUrl ? (
+          <input
+            value={value}
+            onChange={(e) => onChange(e.target.value)}
+            placeholder={variant === "image" ? "Paste image URL or upload" : "Paste YouTube/Vimeo/MP4 URL or upload"}
+            className="w-full rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2 text-[13px] text-[#fafafa] outline-none focus:border-[#52525b]"
+          />
+        ) : null}
+        <div className={cn("flex flex-wrap gap-2", allowUrl && "mt-3")}>
+          <button
+            type="button"
+            onClick={() => inputRef.current?.click()}
+            disabled={uploading}
+            className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#fafafa] px-4 py-2 text-[12px] font-medium text-black hover:bg-[#e4e4e7] disabled:opacity-50"
+          >
+            {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
+            {uploading ? "Uploading…" : "Upload file"}
+          </button>
+          {value ? (
+            <button
+              type="button"
+              onClick={() => onChange("")}
+              className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#27272a] px-3 py-2 text-[12px] text-[#71717a] hover:text-[#fca5a5]"
+            >
+              <Trash2 className="h-3.5 w-3.5" />
+              Remove
+            </button>
+          ) : null}
+        </div>
+        <p className="mt-2 text-[10px] text-[#52525b]">Drag and drop a file here</p>
+      </div>
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        className="hidden"
+        onChange={(e) => {
+          const file = e.target.files?.[0];
+          if (file) void handleFile(file);
+        }}
+      />
+      {error ? <p className="text-[12px] text-[#fca5a5]">{error}</p> : null}
+    </>
+  );
+
+  if (layout === "compact") {
+    return (
+      <div className="space-y-4">
+        <MediaPreview value={value} variant={variant} className={cn("mx-auto h-44 w-44", previewClassName)} />
+        <div>
+          <p className="text-[14px] font-medium text-[#fafafa]">{label}</p>
+          <p className="mt-1 text-[12px] text-[#71717a]">{hint}</p>
+          <p className="mt-1 text-[11px] text-[#52525b]">{sizeHint}</p>
+        </div>
+        {uploadControls}
+      </div>
+    );
+  }
+
   return (
     <div className="rounded-[14px] border border-[#27272a] bg-[#0c0c0c] p-5">
-      <div className="flex flex-col gap-5 lg:flex-row lg:items-start">
+      <div className="flex flex-col gap-5 xl:flex-row xl:items-start">
         <MediaPreview value={value} variant={variant} className={previewSize} />
-
         <div className="min-w-0 flex-1 space-y-4">
           <div>
             <p className="text-[14px] font-medium text-[#fafafa]">{label}</p>
             <p className="mt-1 text-[12px] leading-relaxed text-[#71717a]">{hint}</p>
             <p className="mt-1 text-[11px] text-[#52525b]">{sizeHint}</p>
           </div>
-
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setDragging(true);
-            }}
-            onDragLeave={() => setDragging(false)}
-            onDrop={onDrop}
-            className={cn(
-              "rounded-[12px] border border-dashed p-4 transition",
-              dragging ? "border-[#71717a] bg-[#141414]" : "border-[#27272a] bg-[#0a0a0a]",
-            )}
-          >
-            {allowUrl ? (
-              <input
-                value={value}
-                onChange={(e) => onChange(e.target.value)}
-                placeholder={variant === "image" ? "Paste image URL or upload" : "Paste YouTube/Vimeo/MP4 URL or upload"}
-                className="w-full rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2 text-[13px] text-[#fafafa] outline-none focus:border-[#52525b]"
-              />
-            ) : null}
-
-            <div className={cn("flex flex-wrap gap-2", allowUrl && "mt-3")}>
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
-                disabled={uploading}
-                className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#fafafa] px-4 py-2 text-[12px] font-medium text-black hover:bg-[#e4e4e7] disabled:opacity-50"
-              >
-                {uploading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Upload className="h-3.5 w-3.5" />}
-                {uploading ? "Uploading…" : "Upload file"}
-              </button>
-              {value ? (
-                <button
-                  type="button"
-                  onClick={() => onChange("")}
-                  className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#27272a] px-3 py-2 text-[12px] text-[#71717a] hover:text-[#fca5a5]"
-                >
-                  <Trash2 className="h-3.5 w-3.5" />
-                  Remove
-                </button>
-              ) : null}
-            </div>
-            <p className="mt-2 text-[10px] text-[#52525b]">Drag and drop a file here</p>
-          </div>
-
-          <input
-            ref={inputRef}
-            type="file"
-            accept={accept}
-            className="hidden"
-            onChange={(e) => {
-              const file = e.target.files?.[0];
-              if (file) void handleFile(file);
-            }}
-          />
-
-          {error ? <p className="text-[12px] text-[#fca5a5]">{error}</p> : null}
+          {uploadControls}
         </div>
       </div>
     </div>

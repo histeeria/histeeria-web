@@ -478,6 +478,15 @@ export type ProfileLink = { label: string; url: string };
 
 export type PublicSections = {
   summary: boolean;
+  identity: boolean;
+  purpose: boolean;
+  operational: boolean;
+  knowledge: boolean;
+  behavior: boolean;
+  memory: boolean;
+  trust: boolean;
+  links: boolean;
+  agent_social: boolean;
   judgment_graph: boolean;
   dimensions: boolean;
   flags: boolean;
@@ -503,6 +512,61 @@ export type OwnerProfile = {
   email: string | null;
   avatar_url: string | null;
   social: OwnerSocialLinks;
+};
+
+export type AgentIdentityContext = {
+  role_description: string | null;
+  persona: string | null;
+  capabilities_summary: string | null;
+  limitations: string | null;
+};
+
+export type AgentPurposeContext = {
+  primary_objective: string | null;
+  secondary_goals: string | null;
+  success_criteria: string | null;
+  failure_modes: string | null;
+};
+
+export type AgentOperationalContext = {
+  environment: string | null;
+  available_tools: string | null;
+  permissions_boundary: string | null;
+  session_state_notes: string | null;
+};
+
+export type AgentKnowledgeContext = {
+  domain_knowledge: string | null;
+  constraints: string | null;
+  known_unknowns: string | null;
+};
+
+export type AgentBehaviorContext = {
+  decision_heuristics: string | null;
+  escalation_conditions: string | null;
+  output_format: string | null;
+  guardrails: string | null;
+};
+
+export type AgentMemoryContext = {
+  short_term_context: string | null;
+  long_term_memory: string | null;
+  task_history: string | null;
+};
+
+export type AgentTrustContext = {
+  authorization_notes: string | null;
+  audit_trail: string | null;
+};
+
+export type AgentContext = {
+  identity: AgentIdentityContext;
+  purpose: AgentPurposeContext;
+  operational: AgentOperationalContext;
+  knowledge: AgentKnowledgeContext;
+  behavior: AgentBehaviorContext;
+  memory: AgentMemoryContext;
+  trust: AgentTrustContext;
 };
 
 export type ProfileDashboardJudgement = {
@@ -568,6 +632,8 @@ export type AgentProfileSummary = {
   agent_avatar_url: string | null;
   demo_video_url: string | null;
   owner_profile: OwnerProfile;
+  agent_social: OwnerSocialLinks;
+  agent_context: AgentContext;
   created_at: string;
   updated_at: string;
 };
@@ -589,6 +655,8 @@ export type AgentProfilePayload = {
   agent_avatar_url?: string | null;
   demo_video_url?: string | null;
   owner_profile?: OwnerProfile;
+  agent_social?: OwnerSocialLinks;
+  agent_context?: AgentContext;
 };
 
 export type PublicAgentProfile = {
@@ -604,6 +672,8 @@ export type PublicAgentProfile = {
   agent_avatar_url: string | null;
   demo_video_url: string | null;
   owner_profile: OwnerProfile;
+  agent_social: OwnerSocialLinks;
+  agent_context: AgentContext;
   updated_at: string;
   dashboard: AgentProfileDashboard;
 };
