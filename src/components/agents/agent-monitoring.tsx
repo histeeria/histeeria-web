@@ -10,6 +10,7 @@ import {
   Pause,
   Play,
   RefreshCw,
+  Shield,
 } from "lucide-react";
 
 import type { AgentSummary, DecisionDetail, DecisionSummary, MeResponse } from "@/lib/api";
@@ -348,6 +349,10 @@ export function AgentMonitoring({
   const [refreshing, setRefreshing] = useState(false);
   const [lastUpdated, setLastUpdated] = useState<Date>(() => new Date());
   const [error, setError] = useState<string | null>(null);
+  const [includeSystemPrompt, setIncludeSystemPrompt] = useState(
+    profile.organization?.include_system_prompt_in_monitoring ?? false,
+  );
+  const [savingPrivacy, setSavingPrivacy] = useState(false);
 
   const selectedAgentIdRef = useRef(selectedAgentId);
   const selectedDecisionIdRef = useRef(selectedDecisionId);
@@ -459,6 +464,25 @@ export function AgentMonitoring({
     }
   }
 
+  async function toggleSystemPromptPrivacy(enabled: boolean) {
+    setSavingPrivacy(true);
+    setError(null);
+    try {
+      const res = await fetch("/api/workspace/settings", {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ include_system_prompt_in_monitoring: enabled }),
+      });
+      if (!res.ok) throw new Error("Failed to update privacy setting");
+      const data = (await res.json()) as { include_system_prompt_in_monitoring: boolean };
+      setIncludeSystemPrompt(data.include_system_prompt_in_monitoring);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update setting");
+    } finally {
+      setSavingPrivacy(false);
+    }
+  }
+
   async function selectDecision(decisionId: string) {
     setSelectedDecisionId(decisionId);
     setDetailLoading(true);
@@ -530,6 +554,52 @@ export function AgentMonitoring({
             <RefreshCw className={cn("h-3.5 w-3.5", refreshing && "animate-spin")} />
             Refresh
           </button>
+        </div>
+      </div>
+
+      <div className="mx-6 mt-4 rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-4 py-3">
+        <div className="flex flex-wrap items-start justify-between gap-4">
+          <div className="flex min-w-0 gap-3">
+            <Shield className="mt-0.5 h-4 w-4 shrink-0 text-[#71717a]" />
+            <div className="min-w-0">
+              <p className="text-[13px] font-medium text-[#fafafa]">System prompt privacy</p>
+              <p className="mt-1 max-w-2xl text-[12px] leading-relaxed text-[#71717a]">
+                System prompts are your proprietary instructions. By default, Histeeria redacts them
+                before storage and in monitoring. Only enable full storage if you accept this
+                sensitive data being retained — see our{" "}
+                <a
+                  href="https://histeeria.com/privacy"
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="text-[#a1a1aa] underline underline-offset-2 hover:text-[#fafafa]"
+                >
+                  privacy policy
+                </a>
+                . Changes apply to new observations only.
+              </p>
+            </div>
+          </div>
+          <label className="flex shrink-0 cursor-pointer items-center gap-2.5">
+            <span className="text-[12px] text-[#a1a1aa]">Include system prompt in monitoring</span>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={includeSystemPrompt}
+              disabled={savingPrivacy}
+              onClick={() => void toggleSystemPromptPrivacy(!includeSystemPrompt)}
+              className={cn(
+                "relative h-6 w-11 rounded-full transition disabled:opacity-50",
+                includeSystemPrompt ? "bg-[#fafafa]" : "bg-[#27272a]",
+              )}
+            >
+              <span
+                className={cn(
+                  "absolute top-0.5 h-5 w-5 rounded-full bg-black transition",
+                  includeSystemPrompt ? "left-[22px]" : "left-0.5",
+                )}
+              />
+            </button>
+          </label>
         </div>
       </div>
 
