@@ -628,6 +628,44 @@ export async function listPublicAgentProfiles() {
   return data.profiles;
 }
 
+// --- Inbox ---------------------------------------------------------------
+
+export type InboxMessage = {
+  id: string;
+  type: string;
+  severity: string;
+  title: string;
+  body: string;
+  agent_id: string | null;
+  decision_id: string | null;
+  evaluation_id: string | null;
+  recommended_fix: string | null;
+  metadata: Record<string, unknown>;
+  read_at: string | null;
+  created_at: string;
+};
+
+export type InboxListResponse = {
+  messages: InboxMessage[];
+  unread_count: number;
+};
+
+export async function getInbox(token: string) {
+  return apiFetch<InboxListResponse>("/v1/inbox", { token });
+}
+
+export async function getInboxUnreadCount(token: string) {
+  return apiFetch<{ unread_count: number }>("/v1/inbox/unread-count", { token });
+}
+
+export async function markInboxRead(token: string, messageId: string) {
+  return apiFetch<InboxMessage>(`/v1/inbox/${messageId}/read`, { method: "POST", token });
+}
+
+export async function markAllInboxRead(token: string) {
+  return apiFetch<{ updated: number }>("/v1/inbox/read-all", { method: "POST", token });
+}
+
 export const DOMAINS = [
   {
     value: "customer_support",
