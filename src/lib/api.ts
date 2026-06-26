@@ -51,12 +51,35 @@ export type DecisionSummary = {
   agent_id: string | null;
   session_id: string | null;
   domain: string | null;
+  input_preview: string;
   output_preview: string;
+  has_reasoning: boolean;
   input_tokens: number | null;
   output_tokens: number | null;
   sdk_version: string | null;
   status: string;
   received_at: string;
+};
+
+export type DecisionDetail = {
+  id: string;
+  agent_id: string | null;
+  session_id: string | null;
+  domain: string | null;
+  input: unknown;
+  output: string;
+  metadata: Record<string, unknown> | null;
+  input_tokens: number | null;
+  output_tokens: number | null;
+  sdk_version: string | null;
+  status: string;
+  received_at: string;
+};
+
+export type AgentSummary = {
+  agent_id: string;
+  decision_count: number;
+  last_received_at: string | null;
 };
 
 export type DecisionListResponse = {
@@ -207,8 +230,23 @@ export async function deleteApiKey(token: string, keyId: string) {
   }
 }
 
-export async function getDecisions(token: string, limit = 25) {
-  return apiFetch<DecisionListResponse>(`/v1/decisions?limit=${limit}`, { token });
+export async function getDecisions(
+  token: string,
+  options: { limit?: number; offset?: number; agentId?: string } = {},
+) {
+  const params = new URLSearchParams();
+  params.set("limit", String(options.limit ?? 50));
+  if (options.offset) params.set("offset", String(options.offset));
+  if (options.agentId) params.set("agent_id", options.agentId);
+  return apiFetch<DecisionListResponse>(`/v1/decisions?${params.toString()}`, { token });
+}
+
+export async function getDecision(token: string, decisionId: string) {
+  return apiFetch<DecisionDetail>(`/v1/decisions/${decisionId}`, { token });
+}
+
+export async function getDecisionAgents(token: string) {
+  return apiFetch<{ agents: AgentSummary[] }>("/v1/decisions/agents", { token });
 }
 
 export async function getDecisionStats(token: string) {
