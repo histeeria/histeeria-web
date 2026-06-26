@@ -50,7 +50,7 @@ export function PublicProfileThemeProvider({
           {
             "--pp-bg": isLight ? "#fafafa" : "#09090b",
             "--pp-fg": isLight ? "#18181b" : "#fafafa",
-            "--pp-muted": isLight ? "#71717a" : "#a1a1aa",
+            "--pp-muted": isLight ? "#3f3f46" : "#e4e4e7",
             "--pp-border": isLight ? "#e4e4e7" : "#27272a",
             "--pp-surface": isLight ? "#ffffff" : "#0a0a0a",
             "--pp-surface-alt": isLight ? "#f4f4f5" : "#141414",

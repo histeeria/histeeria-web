@@ -4,8 +4,8 @@ export function publicTheme(isLight: boolean) {
   return {
     bg: isLight ? "bg-[#fafafa]" : "bg-[#09090b]",
     fg: isLight ? "text-[#18181b]" : "text-[#fafafa]",
-    muted: isLight ? "text-[#71717a]" : "text-[#a1a1aa]",
-    faint: isLight ? "text-[#a1a1aa]" : "text-[#52525b]",
+    muted: isLight ? "text-[#3f3f46]" : "text-[#e4e4e7]",
+    faint: isLight ? "text-[#5b616e]" : "text-[#a1a1aa]",
     border: isLight ? "border-[#e4e4e7]" : "border-[#27272a]",
     borderStrong: isLight ? "border-[#d4d4d8]" : "border-[#3f3f46]",
     surface: isLight ? "bg-white" : "bg-[#0a0a0a]",
@@ -14,7 +14,7 @@ export function publicTheme(isLight: boolean) {
     accentBg: isLight ? "bg-[#eef0ff]" : "bg-[#1a1f3d]",
     accentBorder: isLight ? "border-[#c7ceff]" : "border-[#3d4a8f]",
     fill: isLight ? "#18181b" : "#fafafa",
-    fillMuted: isLight ? "#d4d4d8" : "#3f3f46",
+    fillMuted: isLight ? "#94a3b8" : "#4b5563",
     grid: isLight ? "#e4e4e7" : "#27272a",
   };
 }

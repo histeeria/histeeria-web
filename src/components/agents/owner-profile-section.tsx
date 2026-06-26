@@ -38,14 +38,14 @@ export function OwnerProfileSection({ owner }: { owner: OwnerProfile }) {
           src={owner.avatar_url}
           alt={owner.name ?? "Builder"}
           className={cn(
-            "h-24 w-24 shrink-0 border object-cover",
+            "h-24 w-24 shrink-0 border object-cover rounded-full",
             profileThemeClass(isLight, "border-[#27272a]", "border-[#e4e4e7]"),
           )}
         />
       ) : (
         <div
           className={cn(
-            "flex h-24 w-24 shrink-0 items-center justify-center border text-[28px] font-medium",
+            "flex h-24 w-24 shrink-0 items-center justify-center border text-[28px] font-medium rounded-full",
             profileThemeClass(isLight, "border-[#27272a] bg-[#141414] text-[#71717a]", "border-[#e4e4e7] bg-[#f4f4f5] text-[#a1a1aa]"),
           )}
         >

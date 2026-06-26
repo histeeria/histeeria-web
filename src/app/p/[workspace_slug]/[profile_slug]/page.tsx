@@ -30,6 +30,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       workspaceSlug: profile.workspace_slug,
       profileSlug: profile.slug,
       updatedAt: profile.updated_at,
+      ogImageUrl: profile.agent_avatar_url ?? undefined,
     });
   } catch {
     return { title: "Profile not found", robots: { index: false, follow: false } };
@@ -75,7 +76,11 @@ export default async function PublicAgentProfilePage({ params }: PageProps) {
     <PublicProfileThemeProvider slug={profile.slug}>
       <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
 
-      <PublicProfileHeader />
+      <PublicProfileHeader
+        agentName={profile.name}
+        profileSlug={profile.slug}
+        workspaceSlug={profile.workspace_slug}
+      />
 
       <main className="mx-auto max-w-[1200px]">
         <AgentProfileLanding

@@ -62,9 +62,9 @@ function MatrixRow({
   return (
     <section className={cn("grid border-b md:grid-cols-[280px_minmax(0,1fr)]", t.border)}>
       <div className={cn("border-b px-6 py-10 md:border-b-0 md:border-r", t.border)}>
-        <p className={cn("font-mono text-[11px] tracking-[0.2em]", t.faint)}>{index}</p>
-        <h2 className={cn("mt-4 text-[22px] font-medium tracking-[-0.03em]", t.fg)}>{title}</h2>
-        <p className={cn("mt-3 text-[14px] leading-relaxed", t.muted)}>{subtitle}</p>
+        <p className={cn("font-mono text-[12px] tracking-[0.2em]", t.faint)}>{index}</p>
+        <h2 className={cn("mt-4 text-[24px] md:text-[26px] font-medium tracking-[-0.03em] leading-tight", t.fg)}>{title}</h2>
+        <p className={cn("mt-3 text-[15px] md:text-[16px] leading-relaxed", t.muted)}>{subtitle}</p>
       </div>
       <div className="px-6 py-10">{children}</div>
     </section>
@@ -85,8 +85,8 @@ function FieldBlock({
   const t = publicTheme(isLight);
   return (
     <div className="mb-8 last:mb-0">
-      <p className={cn("font-mono text-[10px] uppercase tracking-[0.16em]", t.faint)}>{label}</p>
-      <div className={cn("mt-3 text-[15px] leading-[1.65]", mono ? "font-mono text-[13px] leading-relaxed" : "", t.fg)}>
+      <p className={cn("font-mono text-[11px] md:text-[12px] uppercase tracking-[0.16em]", t.faint)}>{label}</p>
+      <div className={cn("mt-3 text-[16px] md:text-[17px] leading-[1.7]", mono ? "font-mono text-[14px] md:text-[15px] leading-relaxed" : "", t.fg)}>
         {children}
       </div>
     </div>
@@ -97,10 +97,10 @@ function DashList({ items, isLight }: { items: string[]; isLight: boolean }) {
   const t = publicTheme(isLight);
   if (items.length === 0) return null;
   return (
-    <ul className="space-y-2.5">
+    <ul className="space-y-3">
       {items.map((item) => (
-        <li key={item} className={cn("flex gap-3 text-[15px] leading-relaxed", t.fg)}>
-          <span className={cn("mt-[0.55rem] h-px w-3 shrink-0", isLight ? "bg-[#18181b]" : "bg-[#fafafa]")} />
+        <li key={item} className={cn("flex gap-3 text-[16px] md:text-[17px] leading-relaxed", t.fg)}>
+          <span className={cn("mt-[0.6rem] h-px w-3.5 shrink-0", isLight ? "bg-[#18181b]" : "bg-[#fafafa]")} />
           <span>{item}</span>
         </li>
       ))}
@@ -112,12 +112,12 @@ function TagGrid({ tags, isLight }: { tags: string[]; isLight: boolean }) {
   const t = publicTheme(isLight);
   if (tags.length === 0) return null;
   return (
-    <div className="flex flex-wrap gap-2">
+    <div className="flex flex-wrap gap-2.5">
       {tags.map((tag) => (
         <span
           key={tag}
           className={cn(
-            "border px-3 py-1.5 font-mono text-[11px] tracking-wide",
+            "border px-4 py-2 font-mono text-[12px] md:text-[13px] tracking-wide transition-all duration-200 cursor-default hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)] hover:border-[var(--pp-fg)]",
             t.border,
             t.surface,
             t.muted,
@@ -134,9 +134,9 @@ function HeuristicRows({ lines, isLight }: { lines: string[]; isLight: boolean }
   const t = publicTheme(isLight);
   if (lines.length === 0) return null;
   return (
-    <div className="space-y-3">
+    <div className="space-y-3.5">
       {lines.map((line) => (
-        <p key={line} className={cn("font-mono text-[12px] leading-relaxed", t.fg)}>
+        <p key={line} className={cn("font-mono text-[13px] md:text-[14px] leading-relaxed tracking-wide", t.fg)}>
           {line.includes("→") ? line : `→ ${line}`}
         </p>
       ))}
@@ -204,11 +204,11 @@ export function PublicAgentProfile({
   const tagline =
     firstSentence(ctx.purpose.primary_objective) ??
     firstSentence(profile.description) ??
-    "Autonomous agent operating under structured judgment constraints.";
+    "Autonomous execution profile with verified behavioral bounds and telemetry alignment.";
   const description =
     profile.description ??
     ([ctx.identity.persona, ctx.purpose.primary_objective].filter(Boolean).join(" ") ||
-      "Structured AI agent profile on Histeeria.");
+      "A structured verification and capability matrix illustrating operational limits, safety boundaries, and live judgment scores.");
 
   const domainLabel = profile.domain?.replace(/_/g, " ") ?? "General";
   const environment = truncate(ctx.operational.environment, 28);
@@ -260,28 +260,28 @@ export function PublicAgentProfile({
             <div className="border-b px-6 py-12 lg:border-b-0 lg:border-r lg:px-10 lg:py-16">
               <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
-                    <span className={cn("font-mono text-[11px] tracking-wide", t.muted)}>
+                    <span className={cn("font-mono text-[12px] tracking-wide", t.muted)}>
                       /{profile.slug}
                     </span>
                     {role ? (
                       <>
-                        <span className={cn("font-mono text-[11px]", t.faint)}>·</span>
-                        <span className={cn("font-mono text-[11px] uppercase tracking-[0.12em]", t.muted)}>
+                        <span className={cn("font-mono text-[12px]", t.faint)}>·</span>
+                        <span className={cn("font-mono text-[11px] md:text-[12px] uppercase tracking-[0.12em]", t.muted)}>
                           {role}
                         </span>
                       </>
                     ) : null}
                   </div>
 
-                  <h1 className={cn("mt-5 text-[clamp(2.5rem,6vw,4rem)] font-medium leading-[1.02] tracking-[-0.04em]", t.fg)}>
+                  <h1 className={cn("mt-5 text-[clamp(2.75rem,6vw,4.5rem)] font-medium leading-[1.02] tracking-[-0.04em]", t.fg)}>
                     {profile.name}
                   </h1>
 
-                  <p className={cn("mt-5 max-w-xl text-[17px] leading-snug tracking-[-0.01em]", t.fg)}>
+                  <p className={cn("mt-6 max-w-2xl text-[20px] md:text-[22px] font-normal leading-normal tracking-[-0.015em]", t.fg)}>
                     {tagline}
                   </p>
 
-                  <p className={cn("mt-5 max-w-2xl text-[15px] leading-[1.7]", t.muted)}>{description}</p>
+                  <p className={cn("mt-5 max-w-3xl text-[16px] md:text-[18px] leading-[1.75]", t.muted)}>{description}</p>
 
                   <div className={cn("mt-10 grid grid-cols-3 border", t.border)}>
                     {[
@@ -290,10 +290,10 @@ export function PublicAgentProfile({
                       { label: "Trust layer", value: trustLayer },
                     ].map((item) => (
                       <div key={item.label} className={cn("border-r px-4 py-4 last:border-r-0", t.border)}>
-                        <p className={cn("font-mono text-[9px] uppercase tracking-[0.18em]", t.faint)}>
+                        <p className={cn("font-mono text-[10px] uppercase tracking-[0.18em]", t.faint)}>
                           {item.label}
                         </p>
-                        <p className={cn("mt-2 text-[13px] font-medium capitalize leading-snug", t.fg)}>
+                        <p className={cn("mt-2 text-[14px] md:text-[15px] font-mono uppercase tracking-wide leading-snug", t.fg)}>
                           {item.value}
                         </p>
                       </div>
@@ -301,7 +301,7 @@ export function PublicAgentProfile({
                   </div>
 
                   {showLinks ? (
-                    <div className="mt-6 flex flex-wrap gap-2">
+                    <div className="mt-6 flex flex-wrap gap-2.5">
                       {profile.links.map((link: ProfileLink) => (
                         <a
                           key={`${link.label}-${link.url}`}
@@ -309,7 +309,7 @@ export function PublicAgentProfile({
                           target="_blank"
                           rel="noopener noreferrer"
                           className={cn(
-                            "border px-3 py-1.5 font-mono text-[11px] transition hover:opacity-80",
+                            "border px-4 py-2 font-mono text-[12px] tracking-wide transition-all duration-200 hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)] hover:border-[var(--pp-fg)] shadow-sm cursor-pointer",
                             t.border,
                             t.muted,
                           )}
