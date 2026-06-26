@@ -4,20 +4,7 @@ import { useState } from "react";
 import { Check, Clipboard } from "lucide-react";
 
 import { cn } from "@/lib/utils";
-import type { MeResponse } from "@/lib/api";
-
-type DecisionSummary = {
-  id: string;
-  agent_id: string | null;
-  session_id: string | null;
-  domain: string | null;
-  output_preview: string;
-  input_tokens: number | null;
-  output_tokens: number | null;
-  sdk_version: string | null;
-  status: string;
-  received_at: string;
-};
+import type { MeResponse, DecisionSummary } from "@/lib/api";
 
 type DecisionStats = {
   total: number;
