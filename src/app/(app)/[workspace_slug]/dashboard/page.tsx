@@ -25,7 +25,7 @@ export default async function WorkspaceDashboardPage() {
     try {
       const [stats, list] = await Promise.all([
         getDecisionStats(token),
-        getDecisions(token, 25),
+        getDecisions(token, { limit: 25 }),
       ]);
       initialData = { stats, decisions: list.decisions, total: list.total };
     } catch {
