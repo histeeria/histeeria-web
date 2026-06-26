@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Flame, ShieldAlert } from "lucide-react";
+import { Flame, Loader2, ShieldAlert } from "lucide-react";
 
 import type {
   AgentPipelineState,
@@ -196,17 +196,23 @@ export function JudgementBoard({
           </p>
         </div>
         {agents.length > 0 ? (
-          <select
-            value={selectedAgent ?? ""}
-            onChange={(e) => onAgentChange(e.target.value || null)}
-            className="rounded-full border border-[#27272a] bg-[#0a0a0a] px-3 py-1.5 text-[13px] text-[#fafafa] outline-none"
-          >
-            {agents.map((a) => (
-              <option key={a.agent_id ?? "unknown"} value={a.agent_id ?? ""}>
-                {(a.agent_id ?? "unknown").replace(/_/g, " ")}
-              </option>
-            ))}
-          </select>
+          <div className="relative">
+            <select
+              value={selectedAgent ?? ""}
+              onChange={(e) => onAgentChange(e.target.value || null)}
+              disabled={loading}
+              className="cursor-pointer rounded-full border border-[#27272a] bg-[#0a0a0a] px-3 py-1.5 pr-8 text-[13px] text-[#fafafa] outline-none disabled:opacity-60"
+            >
+              {agents.map((a) => (
+                <option key={a.agent_id ?? "unknown"} value={a.agent_id ?? ""}>
+                  {(a.agent_id ?? "unknown").replace(/_/g, " ")}
+                </option>
+              ))}
+            </select>
+            {loading ? (
+              <Loader2 className="pointer-events-none absolute right-2 top-1/2 h-3.5 w-3.5 -translate-y-1/2 animate-spin text-[#71717a]" />
+            ) : null}
+          </div>
         ) : null}
       </div>
 
