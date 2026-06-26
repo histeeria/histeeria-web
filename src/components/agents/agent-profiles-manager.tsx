@@ -447,17 +447,13 @@ export function AgentProfilesManager({
                       </Link>
                     </>
                   ) : null}
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setEditing(p);
-                      setModal("edit");
-                    }}
+                  <Link
+                    href={`/${workspaceSlug}/agents/profiles/${p.id}/edit`}
                     className="flex h-8 w-8 cursor-pointer items-center justify-center rounded-md text-[#71717a] hover:bg-[#141414] hover:text-[#fafafa]"
                     title="Edit"
                   >
                     <Pencil className="h-4 w-4" />
-                  </button>
+                  </Link>
                   <button
                     type="button"
                     onClick={() => handleDelete(p.id)}
