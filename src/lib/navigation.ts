@@ -6,12 +6,10 @@ import {
   CreditCard,
   FileText,
   HelpCircle,
-  History,
   Inbox,
   Key,
   LayoutDashboard,
   Scale,
-  Settings,
   UserCircle,
   UserPlus,
 } from "lucide-react";
@@ -49,7 +47,6 @@ export function buildNavigation(slug: string): NavSection[] {
       addHref: `${base}/agents/profiles?new=1`,
       items: [
         { name: "Monitoring", href: `${base}/agents/monitoring`, icon: Activity },
-        { name: "History", href: `${base}/agents/history`, icon: History },
         { name: "Profiles", href: `${base}/agents/profiles`, icon: UserCircle },
         { name: "Analytics", href: `${base}/agents/analytics`, icon: BarChart3 },
         { name: "API Keys", href: `${base}/agents/api-keys`, icon: Key },
@@ -60,16 +57,12 @@ export function buildNavigation(slug: string): NavSection[] {
       items: [
         { name: "Evaluation", href: `${base}/evaluation/engine`, iconImage: true },
         { name: "Reports", href: `${base}/evaluation/reports`, icon: FileText },
-        { name: "Curriculum", href: `${base}/evaluation/curriculum`, icon: BookOpen },
         { name: "Judgement", href: `${base}/evaluation/judgement`, icon: Scale },
       ],
     },
     {
       section: "Team",
-      items: [
-        { name: "Invite Members", href: `${base}/team/invite`, icon: UserPlus },
-        { name: "Settings", href: `${base}/team/settings`, icon: Settings },
-      ],
+      items: [{ name: "Invite Members", href: `${base}/team/invite`, icon: UserPlus }],
     },
     {
       section: "Histeeria",
@@ -97,19 +90,17 @@ export function buildNavigation(slug: string): NavSection[] {
   ];
 }
 
-export const AGENT_SECTIONS = ["monitoring", "history", "profiles", "analytics", "api-keys"] as const;
-export const EVALUATION_SECTIONS = ["engine", "reports", "curriculum", "judgement"] as const;
+export const AGENT_SECTIONS = ["monitoring", "profiles", "analytics", "api-keys"] as const;
+export const EVALUATION_SECTIONS = ["engine", "reports", "judgement"] as const;
 export const TEAM_SECTIONS = ["invite", "settings"] as const;
 
 export const SECTION_LABELS: Record<string, string> = {
   monitoring: "Monitoring",
-  history: "History",
   profiles: "Profiles",
   analytics: "Analytics",
   "api-keys": "API Keys",
   engine: "Evaluation Engine",
   reports: "Reports",
-  curriculum: "Curriculum",
   judgement: "Judgement",
   invite: "Invite Members",
   settings: "Settings",
