@@ -1,8 +1,9 @@
 import { notFound } from "next/navigation";
 
+import { AgentMonitoring } from "@/components/agents/agent-monitoring";
 import { ApiKeysManager } from "@/components/agents/api-keys-manager";
 import { SectionPlaceholder } from "@/components/dashboard/section-placeholder";
-import { listApiKeys } from "@/lib/api";
+import { getDecision, getDecisionAgents, getDecisions, listApiKeys } from "@/lib/api";
 import { AGENT_SECTIONS, SECTION_LABELS } from "@/lib/navigation";
 import { getCurrentUserProfile, getSessionToken, requireSession } from "@/lib/server";
 
@@ -29,6 +30,43 @@ export default async function AgentSectionPage({ params }: PageProps) {
 
   if (!AGENT_SECTIONS.includes(section as (typeof AGENT_SECTIONS)[number])) {
     notFound();
+  }
+
+  if (section === "monitoring") {
+    const token = await getSessionToken();
+    let initialAgents: Awaited<ReturnType<typeof getDecisionAgents>>["agents"] = [];
+    let initialDecisions: Awaited<ReturnType<typeof getDecisions>>["decisions"] = [];
+
+    let initialDetail: Awaited<ReturnType<typeof getDecision>> | null = null;
+
+    if (token) {
+      try {
+        const agentsData = await getDecisionAgents(token);
+        initialAgents = agentsData.agents;
+        const agentId = initialAgents[0]?.agent_id;
+        const decisionsData = await getDecisions(token, {
+          limit: 100,
+          agentId,
+        });
+        initialDecisions = decisionsData.decisions;
+        if (initialDecisions[0]) {
+          initialDetail = await getDecision(token, initialDecisions[0].id);
+        }
+      } catch {
+        initialAgents = [];
+        initialDecisions = [];
+        initialDetail = null;
+      }
+    }
+
+    return (
+      <AgentMonitoring
+        profile={profile}
+        initialAgents={initialAgents}
+        initialDecisions={initialDecisions}
+        initialDetail={initialDetail}
+      />
+    );
   }
 
   if (section === "api-keys") {
