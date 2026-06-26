@@ -301,6 +301,7 @@ export type SettingsUpdate = {
   full_name?: string | null;
   role?: string | null;
   workspace_name?: string | null;
+  workspace_slug?: string | null;
   agent_name?: string | null;
   domain_name?: string | null;
   agent_description?: string | null;
@@ -537,6 +538,17 @@ export async function getPublicAgentProfile(workspaceSlug: string, profileSlug: 
   return apiFetch<PublicAgentProfile>(
     `/v1/public/${encodeURIComponent(workspaceSlug)}/profiles/${encodeURIComponent(profileSlug)}`,
   );
+}
+
+export type PublicProfileIndexItem = {
+  workspace_slug: string;
+  slug: string;
+  updated_at: string;
+};
+
+export async function listPublicAgentProfiles() {
+  const data = await apiFetch<{ profiles: PublicProfileIndexItem[] }>("/v1/public/profiles");
+  return data.profiles;
 }
 
 export const DOMAINS = [
