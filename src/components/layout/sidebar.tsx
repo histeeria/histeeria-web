@@ -2,21 +2,24 @@
 
 import { signOut, useSession } from "next-auth/react";
 import Image from "next/image";
-import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import {
+  BookOpen,
   Check,
   ChevronDown,
+  CreditCard,
   Loader2,
   LogOut,
   PanelLeft,
   PanelLeftClose,
   Plus,
   Search,
+  Settings,
   UserPlus,
 } from "lucide-react";
 
+import { SidebarActionLink, SidebarNavLink, UserAvatar } from "@/components/layout/sidebar-nav-link";
 import { buildNavigation } from "@/lib/navigation";
 import { cn } from "@/lib/utils";
 
@@ -39,13 +42,19 @@ export function Sidebar({
   const pathname = usePathname();
   const navigation = buildNavigation(workspaceSlug ?? "dashboard");
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
+  const [userOpen, setUserOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
   const workspaceRef = useRef<HTMLDivElement>(null);
+  const userRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     function onClickOutside(e: MouseEvent) {
-      if (workspaceRef.current && !workspaceRef.current.contains(e.target as Node)) {
+      const target = e.target as Node;
+      if (workspaceRef.current && !workspaceRef.current.contains(target)) {
         setWorkspaceOpen(false);
+      }
+      if (userRef.current && !userRef.current.contains(target)) {
+        setUserOpen(false);
       }
     }
     document.addEventListener("mousedown", onClickOutside);
@@ -57,7 +66,7 @@ export function Sidebar({
     return pathname === href || pathname.startsWith(`${href}/`);
   }
 
-  const initials = session?.user?.name?.[0] ?? session?.user?.email?.[0] ?? "H";
+  const settingsHref = workspaceSlug ? `/${workspaceSlug}/settings` : "/settings";
 
   async function handleSignOut() {
     setSigningOut(true);
@@ -70,7 +79,7 @@ export function Sidebar({
       <div
         ref={workspaceRef}
         className={cn(
-          "relative border-b border-[#27272a]",
+          "relative shrink-0 border-b border-[#27272a]",
           collapsed ? "px-2 py-3" : "px-3 py-3",
         )}
       >
@@ -79,7 +88,7 @@ export function Sidebar({
           onClick={() => !collapsed && setWorkspaceOpen((v) => !v)}
           title={workspaceName ?? "Workspace"}
           className={cn(
-            "flex w-full items-center rounded-[8px] transition hover:bg-[#141414] cursor-pointer",
+            "flex w-full cursor-pointer items-center rounded-[8px] transition hover:bg-[#141414]",
             collapsed ? "justify-center p-1.5" : "justify-between gap-2 p-1",
           )}
         >
@@ -124,35 +133,37 @@ export function Sidebar({
               </div>
             </div>
             <div className="my-1 h-px bg-[#27272a]" />
-            <Link
+            <SidebarActionLink
+              href={settingsHref}
+              onClick={() => setWorkspaceOpen(false)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa]"
+            >
+              <Settings className="h-3.5 w-3.5" />
+              Settings
+            </SidebarActionLink>
+            <SidebarActionLink
               href="/onboarding"
-              onClick={() => {
-                setWorkspaceOpen(false);
-                onNavigate?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa] cursor-pointer"
+              onClick={() => setWorkspaceOpen(false)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa]"
             >
               <Plus className="h-3.5 w-3.5" />
               Create workspace
-            </Link>
-            <Link
+            </SidebarActionLink>
+            <SidebarActionLink
               href={workspaceSlug ? `/${workspaceSlug}/team/invite` : "/onboarding"}
-              onClick={() => {
-                setWorkspaceOpen(false);
-                onNavigate?.();
-              }}
-              className="flex w-full items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa] cursor-pointer"
+              onClick={() => setWorkspaceOpen(false)}
+              className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa]"
             >
               <UserPlus className="h-3.5 w-3.5" />
               Join workspace
-            </Link>
+            </SidebarActionLink>
           </div>
         ) : null}
       </div>
 
       {/* Search */}
       {!collapsed ? (
-        <div className="px-3 py-3">
+        <div className="shrink-0 px-3 py-3">
           <button
             type="button"
             className="flex w-full cursor-pointer items-center justify-between rounded-[8px] border border-[#27272a] bg-[#0a0a0a] px-3 py-2 text-[12px] text-[#71717a] transition hover:border-[#3f3f46] hover:text-[#a1a1aa]"
@@ -169,21 +180,20 @@ export function Sidebar({
       ) : null}
 
       {/* Nav */}
-      <nav className="flex-1 space-y-5 overflow-y-auto px-2 pb-4">
+      <nav className="sidebar-scroll min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-4">
         {navigation.map((group) => (
           <div key={group.section} className="space-y-0.5">
             {!collapsed ? (
               <div className="flex items-center justify-between px-2 pb-1">
                 <p className="text-[11px] font-medium text-[#52525b]">{group.section}</p>
                 {group.addHref ? (
-                  <Link
+                  <SidebarActionLink
                     href={group.addHref}
                     onClick={onNavigate}
-                    title="Add agent profile"
                     className="flex h-5 w-5 cursor-pointer items-center justify-center rounded text-[#52525b] transition hover:bg-[#27272a] hover:text-[#fafafa]"
                   >
                     <Plus className="h-3.5 w-3.5" />
-                  </Link>
+                  </SidebarActionLink>
                 ) : null}
               </div>
             ) : null}
@@ -191,13 +201,13 @@ export function Sidebar({
               {group.items.map((item) => {
                 const active = isActive(item.href, item.external);
                 return (
-                  <Link
+                  <SidebarNavLink
                     key={item.name}
                     href={item.href}
-                    target={item.external ? "_blank" : undefined}
-                    rel={item.external ? "noopener noreferrer" : undefined}
-                    onClick={onNavigate}
+                    external={item.external}
+                    collapsed={collapsed}
                     title={collapsed ? item.name : undefined}
+                    onNavigate={onNavigate}
                     className={cn(
                       "group flex cursor-pointer items-center rounded-[6px] py-1.5 text-[13px] transition",
                       collapsed ? "justify-center px-2" : "justify-between px-2",
@@ -233,7 +243,7 @@ export function Sidebar({
                         {item.badge}
                       </span>
                     ) : null}
-                  </Link>
+                  </SidebarNavLink>
                 );
               })}
             </div>
@@ -241,8 +251,8 @@ export function Sidebar({
         ))}
       </nav>
 
-      {/* Collapse toggle + profile */}
-      <div className="border-t border-[#27272a] p-2">
+      {/* Collapse + user menu */}
+      <div className="shrink-0 border-t border-[#27272a] p-2">
         {onToggleCollapse ? (
           <button
             type="button"
@@ -264,39 +274,99 @@ export function Sidebar({
           </button>
         ) : null}
 
-        <div
-          className={cn(
-            "flex items-center rounded-[8px] px-2 py-2",
-            collapsed ? "justify-center" : "justify-between",
-          )}
-        >
-          <div className={cn("flex min-w-0 items-center", collapsed ? "" : "gap-2.5")}>
-            <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-md bg-[#27272a] text-[11px] font-semibold uppercase text-[#fafafa]">
-              {initials}
-            </div>
+        <div ref={userRef} className="relative">
+          <button
+            type="button"
+            onClick={() => setUserOpen((v) => !v)}
+            className={cn(
+              "flex w-full cursor-pointer items-center rounded-[8px] px-2 py-2 transition hover:bg-[#141414]",
+              collapsed ? "justify-center" : "gap-2.5",
+            )}
+          >
+            <UserAvatar
+              image={session?.user?.image}
+              name={session?.user?.name}
+              email={session?.user?.email}
+              size="sm"
+            />
             {!collapsed ? (
-              <div className="min-w-0">
+              <div className="min-w-0 flex-1 text-left">
                 <p className="truncate text-[12px] font-medium text-[#fafafa]">
                   {session?.user?.name ?? "User"}
                 </p>
-                <p className="truncate text-[11px] text-[#52525b]">Admin</p>
+                <p className="truncate text-[11px] text-[#52525b]">Free plan</p>
               </div>
             ) : null}
-          </div>
-          {!collapsed ? (
-            <button
-              type="button"
-              onClick={handleSignOut}
-              disabled={signingOut}
-              title="Sign out"
-              className="flex h-7 w-7 cursor-pointer items-center justify-center rounded-md text-[#71717a] transition hover:bg-[#141414] hover:text-[#fafafa] disabled:opacity-50"
-            >
-              {signingOut ? (
-                <Loader2 className="h-3.5 w-3.5 animate-spin" />
-              ) : (
-                <LogOut className="h-3.5 w-3.5" />
+            {!collapsed ? (
+              <ChevronDown
+                className={cn(
+                  "h-3.5 w-3.5 shrink-0 text-[#52525b] transition",
+                  userOpen && "rotate-180",
+                )}
+              />
+            ) : null}
+          </button>
+
+          {userOpen ? (
+            <div
+              className={cn(
+                "absolute z-50 overflow-hidden rounded-[10px] border border-[#27272a] bg-[#0a0a0a] py-1 shadow-xl",
+                collapsed ? "bottom-full left-0 mb-1 w-56" : "bottom-full left-0 right-0 mb-1",
               )}
-            </button>
+            >
+              <div className="border-b border-[#27272a] px-3 py-3">
+                <div className="flex items-center gap-2.5">
+                  <UserAvatar
+                    image={session?.user?.image}
+                    name={session?.user?.name}
+                    email={session?.user?.email}
+                  />
+                  <div className="min-w-0">
+                    <p className="truncate text-[13px] font-medium text-[#fafafa]">
+                      {session?.user?.name ?? "User"}
+                    </p>
+                    <p className="truncate text-[11px] text-[#71717a]">{session?.user?.email}</p>
+                    <p className="mt-1 text-[10px] font-medium uppercase tracking-wide text-[#52525b]">
+                      Free plan
+                    </p>
+                  </div>
+                </div>
+              </div>
+              <a
+                href="https://histeeria.com/pricing"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setUserOpen(false)}
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa]"
+              >
+                <CreditCard className="h-3.5 w-3.5" />
+                Upgrade plan
+              </a>
+              <a
+                href="https://histeeria.com/docs"
+                target="_blank"
+                rel="noopener noreferrer"
+                onClick={() => setUserOpen(false)}
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa]"
+              >
+                <BookOpen className="h-3.5 w-3.5" />
+                Learn more
+              </a>
+              <div className="my-1 h-px bg-[#27272a]" />
+              <button
+                type="button"
+                onClick={handleSignOut}
+                disabled={signingOut}
+                className="flex w-full cursor-pointer items-center gap-2 px-3 py-2 text-[13px] text-[#a1a1aa] transition hover:bg-[#141414] hover:text-[#fafafa] disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                {signingOut ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                ) : (
+                  <LogOut className="h-3.5 w-3.5" />
+                )}
+                Log out
+              </button>
+            </div>
           ) : null}
         </div>
       </div>
