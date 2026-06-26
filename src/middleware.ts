@@ -5,7 +5,7 @@ import type { NextRequest } from "next/server";
 const protectedPrefixes = ["/dashboard", "/onboarding"];
 
 const workspaceRoutePattern =
-  /^\/[^/]+\/(dashboard|inbox|agents|evaluation|team)(\/|$)/;
+  /^\/[^/]+\/(dashboard|inbox|agents|evaluation|team|settings)(\/|$)/;
 
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
@@ -43,5 +43,7 @@ export const config = {
     "/:workspace_slug/agents/:path*",
     "/:workspace_slug/evaluation/:path*",
     "/:workspace_slug/team/:path*",
+    "/:workspace_slug/settings",
+    "/:workspace_slug/settings/:path*",
   ],
 };
