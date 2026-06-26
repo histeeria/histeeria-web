@@ -2,7 +2,7 @@
 
 import Image from "next/image";
 import { useState } from "react";
-import { CheckCircle2, CircleDashed, Cpu, Play, ScrollText, Shield } from "lucide-react";
+import { CheckCircle2, CircleDashed, Cpu, Loader2, Play, ScrollText, Shield } from "lucide-react";
 
 import type { AgentPipelineState, EvaluationStatus } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -153,13 +153,13 @@ export function EvaluationEngine({ initialStatus }: { initialStatus: EvaluationS
     <div className="space-y-6 p-6 md:p-8">
       <div className="flex flex-wrap items-start justify-between gap-4 border-b border-[#27272a] pb-5">
         <div className="flex gap-3">
-          <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border border-[#27272a] bg-[#0a0a0a]">
+          <div className="flex h-14 w-14 shrink-0 items-center justify-center rounded-xl border border-[#27272a] bg-[#0a0a0a]">
             <Image
               src="/logo-dark.png"
               alt="Histeeria Evaluation Engine"
-              width={24}
-              height={24}
-              className="h-6 w-auto object-contain"
+              width={36}
+              height={36}
+              className="h-9 w-auto object-contain"
             />
           </div>
           <div>
@@ -177,9 +177,13 @@ export function EvaluationEngine({ initialStatus }: { initialStatus: EvaluationS
           type="button"
           onClick={runNow}
           disabled={running}
-          className="inline-flex items-center gap-1.5 rounded-full bg-[#fafafa] px-4 py-2 text-[13px] font-medium text-black transition hover:bg-[#e4e4e7] disabled:opacity-50"
+          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#fafafa] px-4 py-2 text-[13px] font-medium text-black transition hover:bg-[#e4e4e7] disabled:cursor-not-allowed disabled:opacity-50"
         >
-          <Play className="h-3.5 w-3.5" />
+          {running ? (
+            <Loader2 className="h-3.5 w-3.5 animate-spin" />
+          ) : (
+            <Play className="h-3.5 w-3.5" />
+          )}
           {running ? "Running…" : "Run evaluation"}
         </button>
       </div>
