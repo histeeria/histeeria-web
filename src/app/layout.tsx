@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+
+import { siteMetadata } from "@/lib/metadata";
 
 import "./globals.css";
 
@@ -13,10 +14,7 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
-export const metadata: Metadata = {
-  title: "Histeeria",
-  description: "Infrastructure for machine judgment",
-};
+export const metadata = siteMetadata;
 
 export default function RootLayout({
   children,
