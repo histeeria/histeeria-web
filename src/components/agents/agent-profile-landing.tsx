@@ -160,7 +160,7 @@ export function AgentProfileLanding({
                   {profile.links.map((link: ProfileLink) => (
                     <a
                       key={`${link.label}-${link.url}`}
-                      href={link.url}
+                      href={link.url.startsWith("http") ? link.url : `https://${link.url}`}
                       target="_blank"
                       rel="noopener noreferrer"
                       className="rounded-full border border-[#27272a] px-3 py-1.5 text-[12px] text-[#a1a1aa] hover:bg-[#141414]"

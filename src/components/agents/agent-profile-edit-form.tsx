@@ -19,8 +19,15 @@ import {
 } from "lucide-react";
 
 import { MediaUploadField } from "@/components/agents/media-upload-field";
+import { SocialLinkFields } from "@/components/agents/social-link-fields";
 import type { AgentProfilePayload, AgentProfileSummary, OwnerProfile, ProfileLink } from "@/lib/api";
 import { DOMAINS } from "@/lib/api";
+import {
+  normalizeGenericUrl,
+  normalizeOwnerSocial,
+  socialInputValue,
+  type SocialPlatform,
+} from "@/lib/social-links";
 import { cn } from "@/lib/utils";
 
 const fieldClass =
@@ -37,32 +44,26 @@ const EDIT_SECTIONS = [
 
 type SectionId = (typeof EDIT_SECTIONS)[number]["id"];
 
-const SOCIAL_FIELDS = [
-  { key: "linkedin" as const, label: "LinkedIn", placeholder: "https://linkedin.com/in/you" },
-  { key: "github" as const, label: "GitHub", placeholder: "https://github.com/you" },
-  { key: "x" as const, label: "X (Twitter)", placeholder: "https://x.com/you" },
-  { key: "instagram" as const, label: "Instagram", placeholder: "https://instagram.com/you" },
-  { key: "youtube" as const, label: "YouTube", placeholder: "https://youtube.com/@you" },
-  { key: "patreon" as const, label: "Patreon", placeholder: "https://patreon.com/you" },
-  { key: "website" as const, label: "Personal website", placeholder: "https://yoursite.com" },
-];
-
-function normalizeOwner(owner: OwnerProfile): OwnerProfile {
+function ownerToForm(owner: OwnerProfile): OwnerProfile {
   return {
     name: owner.name ?? null,
     description: owner.description ?? null,
     email: owner.email ?? null,
     avatar_url: owner.avatar_url ?? null,
     social: {
-      linkedin: owner.social?.linkedin ?? null,
-      github: owner.social?.github ?? null,
-      x: owner.social?.x ?? null,
-      instagram: owner.social?.instagram ?? null,
-      youtube: owner.social?.youtube ?? null,
-      patreon: owner.social?.patreon ?? null,
-      website: owner.social?.website ?? null,
+      linkedin: socialInputValue("linkedin", owner.social?.linkedin) || null,
+      github: socialInputValue("github", owner.social?.github) || null,
+      x: socialInputValue("x", owner.social?.x) || null,
+      instagram: socialInputValue("instagram", owner.social?.instagram) || null,
+      youtube: socialInputValue("youtube", owner.social?.youtube) || null,
+      patreon: socialInputValue("patreon", owner.social?.patreon) || null,
+      website: socialInputValue("website", owner.social?.website) || null,
     },
   };
+}
+
+function ownerForSave(owner: OwnerProfile): OwnerProfile {
+  return { ...owner, social: normalizeOwnerSocial(owner.social) };
 }
 
 function EditSection({
@@ -111,8 +112,10 @@ function toPayload(values: {
     sdk_agent_id: values.sdkAgentId || undefined,
     agent_avatar_url: values.agentAvatar || undefined,
     demo_video_url: values.demoVideo || undefined,
-    links: values.links.filter((link) => link.label.trim() && link.url.trim()),
-    owner_profile: values.owner,
+    links: values.links
+      .filter((link) => link.label.trim() && link.url.trim())
+      .map((link) => ({ label: link.label.trim(), url: normalizeGenericUrl(link.url.trim()) })),
+    owner_profile: ownerForSave(values.owner),
   };
 }
 
@@ -128,7 +131,7 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
   const [agentAvatar, setAgentAvatar] = useState(profile.agent_avatar_url ?? "");
   const [demoVideo, setDemoVideo] = useState(profile.demo_video_url ?? "");
   const [links, setLinks] = useState<ProfileLink[]>(profile.links.length ? profile.links : []);
-  const [owner, setOwner] = useState<OwnerProfile>(normalizeOwner(profile.owner_profile));
+  const [owner, setOwner] = useState<OwnerProfile>(ownerToForm(profile.owner_profile));
 
   const [saving, setSaving] = useState(false);
   const [saved, setSaved] = useState(false);
@@ -137,7 +140,7 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
   const publicUrl = `/p/${workspaceSlug}/${slug}`;
 
   const isDirty = useMemo(() => {
-    const initial = toPayload({
+    const base = {
       name: profile.name,
       slug: profile.slug,
       description: profile.description ?? "",
@@ -146,19 +149,16 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
       agentAvatar: profile.agent_avatar_url ?? "",
       demoVideo: profile.demo_video_url ?? "",
       links: profile.links,
-      owner: normalizeOwner(profile.owner_profile),
-    });
-    return (
-      JSON.stringify(
-        toPayload({ name, slug, description, domain, sdkAgentId, agentAvatar, demoVideo, links, owner }),
-      ) !== JSON.stringify(initial)
-    );
+    };
+    const initial = toPayload({ ...base, owner: ownerToForm(profile.owner_profile) });
+    const current = toPayload({ ...base, name, slug, description, domain, sdkAgentId, agentAvatar, demoVideo, links, owner });
+    return JSON.stringify(current) !== JSON.stringify(initial);
   }, [name, slug, description, domain, sdkAgentId, agentAvatar, demoVideo, links, owner, profile]);
 
-  function updateSocial(key: keyof OwnerProfile["social"], value: string) {
+  function updateSocial(platform: SocialPlatform, value: string) {
     setOwner((current) => ({
       ...current,
-      social: { ...current.social, [key]: value || null },
+      social: { ...current.social, [platform]: value || null },
     }));
   }
 
@@ -391,24 +391,20 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
           <EditSection id="media" title="Media" description="Visual assets for your public landing page.">
             <MediaUploadField
               label="Agent picture"
-              hint="Square image works best. Uploaded to Cloudflare R2 — your pub-*.r2.dev URL is fine until you add a custom domain."
+              hint="Square image works best on your public profile hero."
               purpose="agent_avatar"
-              accept="image/png,image/jpeg,image/webp,image/gif"
               value={agentAvatar}
               onChange={setAgentAvatar}
               variant="image"
             />
-            <div className="border-t border-[#27272a] pt-5">
-              <MediaUploadField
-                label="Demo video"
-                hint="Upload MP4/WebM to R2, or paste a YouTube, Vimeo, or direct video URL."
-                purpose="demo_video"
-                accept="video/mp4,video/webm,video/quicktime"
-                value={demoVideo}
-                onChange={setDemoVideo}
-                variant="video"
-              />
-            </div>
+            <MediaUploadField
+              label="Demo video"
+              hint="Upload a short clip, or paste a YouTube, Vimeo, or direct MP4 link."
+              purpose="demo_video"
+              value={demoVideo}
+              onChange={setDemoVideo}
+              variant="video"
+            />
           </EditSection>
 
           <EditSection id="integration" title="Integration" description="Connect SDK telemetry and external resources.">
@@ -457,7 +453,7 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
                       <input
                         value={link.url}
                         onChange={(e) => updateLink(index, "url", e.target.value)}
-                        placeholder="https://"
+                        placeholder="docs.example.com or full URL"
                         className={cn(fieldClass, "min-w-0 flex-1")}
                       />
                       <button
@@ -475,7 +471,18 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
           </EditSection>
 
           <EditSection id="builder" title="Builder profile" description="Your identity at the bottom of the public page.">
-            <div className="grid gap-6 lg:grid-cols-[minmax(0,1fr)_200px]">
+            <div className="grid gap-6 xl:grid-cols-[240px_minmax(0,1fr)]">
+              <div className="xl:sticky xl:top-28 xl:self-start">
+                <MediaUploadField
+                  label="Your photo"
+                  hint="Shown in the Built by section on your public page."
+                  purpose="owner_avatar"
+                  value={owner.avatar_url ?? ""}
+                  onChange={(url) => setOwner((c) => ({ ...c, avatar_url: url || null }))}
+                  variant="image"
+                  previewClassName="h-48 w-48 mx-auto"
+                />
+              </div>
               <div className="space-y-5">
                 <label className="block space-y-2">
                   <span className={labelClass}>Your name</span>
@@ -507,35 +514,11 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
                   />
                 </label>
               </div>
-              <div>
-                <MediaUploadField
-                  label="Your photo"
-                  hint="Shown in the Built by section."
-                  purpose="owner_avatar"
-                  accept="image/png,image/jpeg,image/webp"
-                  value={owner.avatar_url ?? ""}
-                  onChange={(url) => setOwner((c) => ({ ...c, avatar_url: url || null }))}
-                  variant="image"
-                  previewClassName="h-40 w-40 mx-auto"
-                />
-              </div>
             </div>
           </EditSection>
 
           <EditSection id="social" title="Social links" description="Connect your profiles — only filled fields are shown publicly.">
-            <div className="grid gap-4 sm:grid-cols-2">
-              {SOCIAL_FIELDS.map((field) => (
-                <label key={field.key} className="block space-y-2">
-                  <span className={labelClass}>{field.label}</span>
-                  <input
-                    value={owner.social[field.key] ?? ""}
-                    onChange={(e) => updateSocial(field.key, e.target.value)}
-                    placeholder={field.placeholder}
-                    className={fieldClass}
-                  />
-                </label>
-              ))}
-            </div>
+            <SocialLinkFields social={owner.social} onChange={updateSocial} />
           </EditSection>
           </div>
         </div>
