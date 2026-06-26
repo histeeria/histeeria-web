@@ -90,12 +90,25 @@ export function Sidebar({ workspaceName, workspaceSlug, onNavigate }: SidebarPro
                     )}
                   >
                     <span className="flex items-center gap-2.5">
-                      <item.icon
-                        className={cn(
-                          "h-4 w-4 shrink-0",
-                          active ? "text-[#fafafa]" : "text-[#71717a] group-hover:text-[#a1a1aa]",
-                        )}
-                      />
+                      {item.iconImage ? (
+                        <Image
+                          src="/logo-dark.png"
+                          alt=""
+                          width={16}
+                          height={16}
+                          className={cn(
+                            "h-4 w-4 shrink-0 object-contain",
+                            active ? "opacity-100" : "opacity-70 group-hover:opacity-90",
+                          )}
+                        />
+                      ) : item.icon ? (
+                        <item.icon
+                          className={cn(
+                            "h-4 w-4 shrink-0",
+                            active ? "text-[#fafafa]" : "text-[#71717a] group-hover:text-[#a1a1aa]",
+                          )}
+                        />
+                      ) : null}
                       {item.name}
                     </span>
                     {item.badge ? (
