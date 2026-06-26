@@ -262,6 +262,65 @@ export type WorkspaceSettings = {
   include_system_prompt_in_monitoring: boolean;
 };
 
+// --- Unified settings ------------------------------------------------------
+
+export type SettingsResponse = {
+  account: {
+    email: string;
+    full_name: string | null;
+    role: string | null;
+    plan: string;
+  };
+  workspace: {
+    workspace_name: string;
+    workspace_slug: string | null;
+    agent_name: string;
+    domain_name: string;
+    agent_description: string | null;
+    team_size: string | null;
+    team_members: string | null;
+    include_system_prompt_in_monitoring: boolean;
+  };
+  team: {
+    team_size: string | null;
+    team_members: string | null;
+    invite_path: string | null;
+  };
+  evaluation: {
+    warmup_min_decisions: number;
+    report_every: number;
+    incident_threshold: number;
+    streak_threshold: number;
+    llm_enabled: boolean;
+    judge_model: string;
+    adjudicator_model: string;
+  };
+};
+
+export type SettingsUpdate = {
+  full_name?: string | null;
+  role?: string | null;
+  workspace_name?: string | null;
+  agent_name?: string | null;
+  domain_name?: string | null;
+  agent_description?: string | null;
+  team_size?: string | null;
+  team_members?: string | null;
+  include_system_prompt_in_monitoring?: boolean;
+};
+
+export async function getSettings(token: string) {
+  return apiFetch<SettingsResponse>("/v1/settings", { token });
+}
+
+export async function updateSettings(token: string, payload: SettingsUpdate) {
+  return apiFetch<SettingsResponse>("/v1/settings", {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
 // --- Evaluation engine ---------------------------------------------------
 
 export type EvalEngineConfig = {
