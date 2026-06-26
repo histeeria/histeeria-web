@@ -1,9 +1,10 @@
 import { notFound } from "next/navigation";
 
 import { AgentMonitoring } from "@/components/agents/agent-monitoring";
+import { AgentProfilesManager } from "@/components/agents/agent-profiles-manager";
 import { ApiKeysManager } from "@/components/agents/api-keys-manager";
 import { SectionPlaceholder } from "@/components/dashboard/section-placeholder";
-import { getDecision, getDecisionAgents, getDecisions, listApiKeys } from "@/lib/api";
+import { getDecision, getDecisionAgents, getDecisions, listAgentProfiles, listApiKeys } from "@/lib/api";
 import { AGENT_SECTIONS, SECTION_LABELS } from "@/lib/navigation";
 import { getCurrentUserProfile, getSessionToken, requireSession } from "@/lib/server";
 
@@ -12,9 +13,10 @@ interface PageProps {
     workspace_slug: string;
     section: string;
   };
+  searchParams?: Promise<{ new?: string }> | { new?: string };
 }
 
-export default async function AgentSectionPage({ params }: PageProps) {
+export default async function AgentSectionPage({ params, searchParams }: PageProps) {
   const session = await requireSession();
   if (!session) {
     notFound();
@@ -26,6 +28,11 @@ export default async function AgentSectionPage({ params }: PageProps) {
   }
 
   const resolved = params instanceof Promise ? await params : params;
+  const resolvedSearch = searchParams
+    ? searchParams instanceof Promise
+      ? await searchParams
+      : searchParams
+    : {};
   const section = resolved.section;
 
   if (!AGENT_SECTIONS.includes(section as (typeof AGENT_SECTIONS)[number])) {
@@ -86,6 +93,28 @@ export default async function AgentSectionPage({ params }: PageProps) {
         profile={profile}
         workspaceSlug={resolved.workspace_slug}
         initialKeys={initialKeys}
+      />
+    );
+  }
+
+  if (section === "profiles") {
+    const token = await getSessionToken();
+    let initialProfiles: Awaited<ReturnType<typeof listAgentProfiles>>["profiles"] = [];
+    if (token) {
+      try {
+        const data = await listAgentProfiles(token);
+        initialProfiles = data.profiles;
+      } catch {
+        initialProfiles = [];
+      }
+    }
+
+    return (
+      <AgentProfilesManager
+        profile={profile}
+        workspaceSlug={resolved.workspace_slug}
+        initialProfiles={initialProfiles}
+        initialOpenCreate={resolvedSearch.new === "1"}
       />
     );
   }
