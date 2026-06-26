@@ -139,6 +139,74 @@ export async function regenerateApiKey(token: string) {
   });
 }
 
+export type ApiKeyPermission = "read" | "write" | "read_write";
+
+export type ApiKeySummary = {
+  id: string;
+  name: string;
+  agent_name: string;
+  status: "active" | "revoked";
+  tracking_id: string;
+  secret_masked: string;
+  permissions: ApiKeyPermission;
+  created_at: string;
+  last_used_at: string | null;
+  created_by_name: string | null;
+};
+
+export type ApiKeyListResponse = {
+  keys: ApiKeySummary[];
+};
+
+export type ApiKeyCreatePayload = {
+  name: string;
+  agent_name: string;
+  permissions: ApiKeyPermission;
+};
+
+export type ApiKeyCreateResponse = ApiKeySummary & {
+  api_key: string;
+  message: string;
+};
+
+export type ApiKeyUpdatePayload = {
+  name?: string;
+  permissions?: ApiKeyPermission;
+};
+
+export async function listApiKeys(token: string) {
+  return apiFetch<ApiKeyListResponse>("/v1/api-keys", { token });
+}
+
+export async function createApiKey(token: string, payload: ApiKeyCreatePayload) {
+  return apiFetch<ApiKeyCreateResponse>("/v1/api-keys", {
+    method: "POST",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateApiKey(token: string, keyId: string, payload: ApiKeyUpdatePayload) {
+  return apiFetch<ApiKeySummary>(`/v1/api-keys/${keyId}`, {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteApiKey(token: string, keyId: string) {
+  const response = await fetch(`${API_URL}/v1/api-keys/${keyId}`, {
+    method: "DELETE",
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  });
+  if (!response.ok) {
+    const body = await response.json().catch(() => ({}));
+    throw new Error(body.detail ?? "Failed to delete API key");
+  }
+}
+
 export async function getDecisions(token: string, limit = 25) {
   return apiFetch<DecisionListResponse>(`/v1/decisions?limit=${limit}`, { token });
 }
