@@ -483,6 +483,26 @@ export type PublicSections = {
   flags: boolean;
   worst_decisions: boolean;
   cost_trends: boolean;
+  demo_video: boolean;
+  owner: boolean;
+};
+
+export type OwnerSocialLinks = {
+  linkedin: string | null;
+  github: string | null;
+  x: string | null;
+  instagram: string | null;
+  youtube: string | null;
+  patreon: string | null;
+  website: string | null;
+};
+
+export type OwnerProfile = {
+  name: string | null;
+  description: string | null;
+  email: string | null;
+  avatar_url: string | null;
+  social: OwnerSocialLinks;
 };
 
 export type ProfileDashboardJudgement = {
@@ -545,6 +565,9 @@ export type AgentProfileSummary = {
   is_public: boolean;
   links: ProfileLink[];
   public_sections: PublicSections;
+  agent_avatar_url: string | null;
+  demo_video_url: string | null;
+  owner_profile: OwnerProfile;
   created_at: string;
   updated_at: string;
 };
@@ -563,6 +586,9 @@ export type AgentProfilePayload = {
   is_public?: boolean;
   links?: ProfileLink[];
   public_sections?: Partial<PublicSections>;
+  agent_avatar_url?: string | null;
+  demo_video_url?: string | null;
+  owner_profile?: OwnerProfile;
 };
 
 export type PublicAgentProfile = {
@@ -575,6 +601,9 @@ export type PublicAgentProfile = {
   workspace_slug: string;
   links: ProfileLink[];
   public_sections: PublicSections;
+  agent_avatar_url: string | null;
+  demo_video_url: string | null;
+  owner_profile: OwnerProfile;
   updated_at: string;
   dashboard: AgentProfileDashboard;
 };
