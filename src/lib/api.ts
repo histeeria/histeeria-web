@@ -258,6 +258,141 @@ export type WorkspaceSettings = {
   include_system_prompt_in_monitoring: boolean;
 };
 
+// --- Evaluation engine ---------------------------------------------------
+
+export type EvalEngineConfig = {
+  warmup_min_decisions: number;
+  batch_size: number;
+  report_every: number;
+  clean_sample_rate: number;
+  incident_threshold: number;
+  streak_threshold: number;
+  llm_enabled: boolean;
+  judge_model: string;
+  adjudicator_model: string;
+};
+
+export type AgentPipelineState = {
+  agent_id: string | null;
+  total_observations: number;
+  evaluated_count: number;
+  warmed_up: boolean;
+  warmup_remaining: number;
+  next_report_in: number;
+  last_evaluated_at: string | null;
+};
+
+export type EvaluationStatus = {
+  config: EvalEngineConfig;
+  agents: AgentPipelineState[];
+  pending_evaluations: number;
+};
+
+export type DimensionScore = {
+  dimension: string;
+  label: string;
+  mean: number | null;
+  n: number;
+};
+
+export type EvalFlag = {
+  dimension: string;
+  severity: string;
+  description: string;
+  evidence: string;
+};
+
+export type EvaluationItem = {
+  id: string;
+  decision_id: string;
+  overall: number | null;
+  confidence: string;
+  abstained: string[];
+  flags: EvalFlag[];
+  reasoning: string | null;
+  judge_model: string | null;
+  evaluated_at: string;
+};
+
+export type IncidentItem = {
+  id: string;
+  dimension: string;
+  severity: string;
+  description: string | null;
+  evidence_quote: string | null;
+  decision_id: string | null;
+  resolved: boolean;
+  created_at: string;
+};
+
+export type JudgementResponse = {
+  agent_id: string | null;
+  overall: number | null;
+  grade: string;
+  evaluated_count: number;
+  low_confidence_count: number;
+  dimensions: DimensionScore[];
+  current_streak: number;
+  longest_streak: number;
+  recent_evaluations: EvaluationItem[];
+  incidents: IncidentItem[];
+};
+
+export type GraphPoint = {
+  date: string;
+  overall: number | null;
+  evaluated_count: number;
+  incident_count: number;
+};
+
+export type GraphResponse = { agent_id: string | null; points: GraphPoint[] };
+
+export type ReportSummary = {
+  id: string;
+  agent_id: string | null;
+  judgment_grade: string | null;
+  overall: number | null;
+  decisions_analyzed: number;
+  generated_at: string;
+};
+
+export type ReportDetail = ReportSummary & {
+  content: Record<string, unknown>;
+};
+
+export async function getEvaluationStatus(token: string) {
+  return apiFetch<EvaluationStatus>("/v1/evaluation/status", { token });
+}
+
+export async function getJudgement(token: string, agentId?: string) {
+  const params = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : "";
+  return apiFetch<JudgementResponse>(`/v1/evaluation/judgement${params}`, { token });
+}
+
+export async function getEvaluationGraph(token: string, agentId?: string, days = 90) {
+  const params = new URLSearchParams({ days: String(days) });
+  if (agentId) params.set("agent_id", agentId);
+  return apiFetch<GraphResponse>(`/v1/evaluation/graph?${params.toString()}`, { token });
+}
+
+export async function listReports(token: string, agentId?: string) {
+  const params = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : "";
+  return apiFetch<{ reports: ReportSummary[] }>(`/v1/evaluation/reports${params}`, { token });
+}
+
+export async function getReport(token: string, reportId: string) {
+  return apiFetch<ReportDetail>(`/v1/evaluation/reports/${reportId}`, { token });
+}
+
+export async function runEvaluation(token: string, agentId?: string, limit = 100) {
+  const params = new URLSearchParams({ limit: String(limit) });
+  if (agentId) params.set("agent_id", agentId);
+  return apiFetch<{ processed: number; evaluated: number; screened: number; warming_up: number; failed: number }>(
+    `/v1/evaluation/run?${params.toString()}`,
+    { method: "POST", token },
+  );
+}
+
 export async function getWorkspaceSettings(token: string) {
   return apiFetch<WorkspaceSettings>("/v1/workspace/settings", { token });
 }
