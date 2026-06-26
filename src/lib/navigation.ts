@@ -31,14 +31,19 @@ export interface NavSection {
   addHref?: string;
 }
 
-export function buildNavigation(slug: string): NavSection[] {
+export function buildNavigation(slug: string, unreadCount = 0): NavSection[] {
   const base = `/${slug}`;
 
   return [
     {
       section: "Workspace",
       items: [
-        { name: "Inbox", href: `${base}/inbox`, icon: Inbox, badge: "2" },
+        {
+          name: "Inbox",
+          href: `${base}/inbox`,
+          icon: Inbox,
+          badge: unreadCount > 0 ? String(unreadCount > 99 ? "99+" : unreadCount) : undefined,
+        },
         { name: "Overview", href: `${base}/dashboard`, icon: LayoutDashboard },
       ],
     },

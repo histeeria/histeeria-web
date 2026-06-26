@@ -40,7 +40,8 @@ export function Sidebar({
 }: SidebarProps) {
   const { data: session } = useSession();
   const pathname = usePathname();
-  const navigation = buildNavigation(workspaceSlug ?? "dashboard");
+  const [unreadCount, setUnreadCount] = useState(0);
+  const navigation = buildNavigation(workspaceSlug ?? "dashboard", unreadCount);
   const [workspaceOpen, setWorkspaceOpen] = useState(false);
   const [userOpen, setUserOpen] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
@@ -60,6 +61,31 @@ export function Sidebar({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  useEffect(() => {
+    async function loadUnread() {
+      try {
+        const res = await fetch("/api/inbox/unread-count");
+        if (res.ok) {
+          const data = (await res.json()) as { unread_count: number };
+          setUnreadCount(data.unread_count);
+        }
+      } catch {
+        setUnreadCount(0);
+      }
+    }
+    loadUnread();
+    function onInboxUpdated(e: Event) {
+      const detail = (e as CustomEvent<number>).detail;
+      if (typeof detail === "number") setUnreadCount(detail);
+    }
+    window.addEventListener("inbox:updated", onInboxUpdated);
+    const timer = window.setInterval(loadUnread, 30000);
+    return () => {
+      window.removeEventListener("inbox:updated", onInboxUpdated);
+      window.clearInterval(timer);
+    };
+  }, [pathname]);
 
   function navPath(href: string) {
     return href.split("?")[0].split("#")[0];
