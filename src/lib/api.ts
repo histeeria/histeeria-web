@@ -474,6 +474,67 @@ export async function updateWorkspaceSettings(
 
 // --- Agent profiles --------------------------------------------------------
 
+export type ProfileLink = { label: string; url: string };
+
+export type PublicSections = {
+  summary: boolean;
+  judgment_graph: boolean;
+  dimensions: boolean;
+  flags: boolean;
+  worst_decisions: boolean;
+  cost_trends: boolean;
+};
+
+export type ProfileDashboardJudgement = {
+  overall: number | null;
+  grade: string;
+  evaluated_count: number;
+  current_streak: number;
+  longest_streak: number;
+  dimensions: Array<{ dimension: string; label: string; mean: number | null; n: number }>;
+};
+
+export type CommonFlagItem = {
+  label: string;
+  dimension: string;
+  severity: string;
+  count: number;
+};
+
+export type WorstDecisionItem = {
+  evaluation_id: string;
+  decision_id: string;
+  overall: number | null;
+  input_preview: string;
+  output_preview: string;
+  flags: Array<{ dimension: string; severity: string; description: string; evidence: string }>;
+  evaluated_at: string;
+};
+
+export type CostTrendPoint = {
+  date: string;
+  cost_usd: number;
+  prompt_tokens: number;
+  completion_tokens: number;
+  evaluations: number;
+};
+
+export type ProfileDashboardSections = {
+  judgement: ProfileDashboardJudgement | null;
+  judgment_graph: GraphPoint[];
+  common_flags: CommonFlagItem[];
+  worst_decisions: WorstDecisionItem[];
+  cost_trends: CostTrendPoint[];
+  show_summary?: boolean;
+  show_dimensions?: boolean;
+};
+
+export type AgentProfileDashboard = {
+  has_sdk_agent: boolean;
+  sdk_agent_id: string | null;
+  sections: ProfileDashboardSections;
+};
+
 export type AgentProfileSummary = {
   id: string;
   name: string;
@@ -482,8 +543,15 @@ export type AgentProfileSummary = {
   domain: string | null;
   sdk_agent_id: string | null;
   is_public: boolean;
+  links: ProfileLink[];
+  public_sections: PublicSections;
   created_at: string;
   updated_at: string;
+};
+
+export type AgentProfileDetailResponse = {
+  profile: AgentProfileSummary;
+  dashboard: AgentProfileDashboard;
 };
 
 export type AgentProfilePayload = {
@@ -493,6 +561,8 @@ export type AgentProfilePayload = {
   domain?: string | null;
   sdk_agent_id?: string | null;
   is_public?: boolean;
+  links?: ProfileLink[];
+  public_sections?: Partial<PublicSections>;
 };
 
 export type PublicAgentProfile = {
@@ -503,8 +573,15 @@ export type PublicAgentProfile = {
   sdk_agent_id: string | null;
   workspace_name: string;
   workspace_slug: string;
+  links: ProfileLink[];
+  public_sections: PublicSections;
   updated_at: string;
+  dashboard: AgentProfileDashboard;
 };
+
+export async function getAgentProfileDetail(token: string, id: string) {
+  return apiFetch<AgentProfileDetailResponse>(`/v1/agent-profiles/${id}`, { token });
+}
 
 export async function listAgentProfiles(token: string) {
   return apiFetch<{ profiles: AgentProfileSummary[] }>("/v1/agent-profiles", { token });
