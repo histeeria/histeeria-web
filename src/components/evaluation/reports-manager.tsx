@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Download, FileText } from "lucide-react";
+import { Download, FileText, Loader2 } from "lucide-react";
 
 import type { ReportDetail, ReportSummary } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -157,7 +157,10 @@ export function ReportsManager({ initialReports }: { initialReports: ReportSumma
   const [selected, setSelected] = useState<ReportDetail | null>(null);
   const [loading, setLoading] = useState(false);
 
+  const [loadingId, setLoadingId] = useState<string | null>(null);
+
   async function openReport(id: string) {
+    setLoadingId(id);
     setLoading(true);
     try {
       const res = await fetch(`/api/evaluation/reports/${id}`);
@@ -166,6 +169,7 @@ export function ReportsManager({ initialReports }: { initialReports: ReportSumma
       /* ignore */
     } finally {
       setLoading(false);
+      setLoadingId(null);
     }
   }
 
@@ -191,14 +195,19 @@ export function ReportsManager({ initialReports }: { initialReports: ReportSumma
                 key={r.id}
                 type="button"
                 onClick={() => openReport(r.id)}
+                disabled={loadingId === r.id}
                 className={cn(
-                  "flex w-full items-center gap-3 rounded-[10px] border px-4 py-3 text-left transition",
+                  "flex w-full cursor-pointer items-center gap-3 rounded-[10px] border px-4 py-3 text-left transition disabled:cursor-wait disabled:opacity-70",
                   selected?.id === r.id
                     ? "border-[#3f3f46] bg-[#141414]"
                     : "border-[#27272a] bg-[#0a0a0a] hover:bg-[#141414]",
                 )}
               >
-                <FileText className="h-4 w-4 shrink-0 text-[#a1a1aa]" />
+                {loadingId === r.id ? (
+                  <Loader2 className="h-4 w-4 shrink-0 animate-spin text-[#a1a1aa]" />
+                ) : (
+                  <FileText className="h-4 w-4 shrink-0 text-[#a1a1aa]" />
+                )}
                 <div className="min-w-0 flex-1">
                   <p className="truncate text-[13px] capitalize text-[#fafafa]">
                     {(r.agent_id ?? "unknown").replace(/_/g, " ")}
