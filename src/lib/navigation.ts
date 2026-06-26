@@ -29,6 +29,8 @@ export interface NavItem {
 export interface NavSection {
   section: string;
   items: NavItem[];
+  /** Optional + action link shown beside the section header */
+  addHref?: string;
 }
 
 export function buildNavigation(slug: string): NavSection[] {
@@ -44,6 +46,7 @@ export function buildNavigation(slug: string): NavSection[] {
     },
     {
       section: "Agents",
+      addHref: `${base}/agents/profiles?new=1`,
       items: [
         { name: "Monitoring", href: `${base}/agents/monitoring`, icon: Activity },
         { name: "History", href: `${base}/agents/history`, icon: History },
