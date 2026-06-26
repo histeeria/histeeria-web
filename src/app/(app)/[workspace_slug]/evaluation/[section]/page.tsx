@@ -1,8 +1,21 @@
-import Image from "next/image";
 import { notFound } from "next/navigation";
 
+import {
+  EvaluationEngine,
+  JudgementBoard,
+  ReportsManager,
+} from "@/components/evaluation";
 import { SectionPlaceholder } from "@/components/dashboard/section-placeholder";
+import {
+  getEvaluationStatus,
+  getJudgement,
+  listReports,
+  type EvaluationStatus,
+  type JudgementResponse,
+  type ReportSummary,
+} from "@/lib/api";
 import { EVALUATION_SECTIONS, SECTION_LABELS } from "@/lib/navigation";
+import { getSessionToken } from "@/lib/server";
 
 interface PageProps {
   params: Promise<{ section: string }> | { section: string };
@@ -16,34 +29,49 @@ export default async function EvaluationSectionPage({ params }: PageProps) {
     notFound();
   }
 
+  const token = await getSessionToken();
+
   if (section === "engine") {
-    return (
-      <div className="flex min-h-[60vh] flex-col items-center justify-center px-6 text-center">
-        <div className="max-w-md space-y-4">
-          <div className="mx-auto flex h-14 w-14 items-center justify-center rounded-xl border border-[#27272a] bg-[#0a0a0a]">
-            <Image
-              src="/logo-dark.png"
-              alt="Histeeria Evaluation Engine"
-              width={32}
-              height={32}
-              className="h-8 w-auto object-contain"
-            />
-          </div>
-          <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa]">
-            Evaluation Engine
-          </h1>
-          <p className="text-[13px] leading-relaxed text-[#71717a]">
-            The Histeeria evaluation engine scores agent judgment against your domain curriculum.
-            This module is under active development.
-          </p>
-          <div className="mx-auto mt-6 h-px w-12 bg-[#27272a]" />
-        </div>
-      </div>
-    );
+    let status: EvaluationStatus | null = null;
+    if (token) {
+      try {
+        status = await getEvaluationStatus(token);
+      } catch {
+        status = null;
+      }
+    }
+    return <EvaluationEngine initialStatus={status} />;
+  }
+
+  if (section === "judgement") {
+    let initial: JudgementResponse | null = null;
+    let agents: EvaluationStatus["agents"] = [];
+    if (token) {
+      try {
+        const status = await getEvaluationStatus(token);
+        agents = status.agents;
+        initial = await getJudgement(token, agents[0]?.agent_id ?? undefined);
+      } catch {
+        initial = null;
+      }
+    }
+    return <JudgementBoard initial={initial} agents={agents} />;
+  }
+
+  if (section === "reports") {
+    let reports: ReportSummary[] = [];
+    if (token) {
+      try {
+        const data = await listReports(token);
+        reports = data.reports;
+      } catch {
+        reports = [];
+      }
+    }
+    return <ReportsManager initialReports={reports} />;
   }
 
   const title = SECTION_LABELS[section] ?? section;
-
   return (
     <SectionPlaceholder
       title={title}
