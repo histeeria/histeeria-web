@@ -15,7 +15,7 @@ import {
   X,
 } from "lucide-react";
 
-import type { AgentProfilePayload, AgentProfileSummary, MeResponse } from "@/lib/api";
+import type { AgentProfilePayload, AgentProfileSummary, MeResponse, ProfileLink } from "@/lib/api";
 import { DOMAINS } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -65,6 +65,21 @@ function ProfileForm({
   const [domain, setDomain] = useState(initial?.domain ?? "general");
   const [sdkAgentId, setSdkAgentId] = useState(initial?.sdk_agent_id ?? "");
   const [isPublic, setIsPublic] = useState(initial?.is_public ?? false);
+  const [links, setLinks] = useState<ProfileLink[]>(initial?.links ?? []);
+
+  function updateLink(index: number, field: keyof ProfileLink, value: string) {
+    setLinks((current) =>
+      current.map((link, i) => (i === index ? { ...link, [field]: value } : link)),
+    );
+  }
+
+  function addLink() {
+    setLinks((current) => [...current, { label: "", url: "" }]);
+  }
+
+  function removeLink(index: number) {
+    setLinks((current) => current.filter((_, i) => i !== index));
+  }
 
   return (
     <form
@@ -78,6 +93,7 @@ function ProfileForm({
           domain: domain || undefined,
           sdk_agent_id: sdkAgentId || undefined,
           is_public: isPublic,
+          links: links.filter((link) => link.label.trim() && link.url.trim()),
         });
       }}
     >
@@ -134,6 +150,41 @@ function ProfileForm({
           placeholder="security_scanner"
         />
       </label>
+      <label className="block space-y-1.5">
+        <span className="text-[12px] text-[#a1a1aa]">Links</span>
+        <div className="space-y-2">
+          {links.map((link, index) => (
+            <div key={index} className="flex gap-2">
+              <input
+                value={link.label}
+                onChange={(e) => updateLink(index, "label", e.target.value)}
+                placeholder="Label"
+                className="w-1/3 rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2 text-[13px] text-[#fafafa] outline-none focus:border-[#52525b]"
+              />
+              <input
+                value={link.url}
+                onChange={(e) => updateLink(index, "url", e.target.value)}
+                placeholder="https://"
+                className="min-w-0 flex-1 rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2 text-[13px] text-[#fafafa] outline-none focus:border-[#52525b]"
+              />
+              <button
+                type="button"
+                onClick={() => removeLink(index)}
+                className="cursor-pointer rounded-[8px] border border-[#27272a] px-2 text-[#71717a] hover:text-[#fafafa]"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          ))}
+          <button
+            type="button"
+            onClick={addLink}
+            className="cursor-pointer text-[12px] text-[#71717a] hover:text-[#fafafa]"
+          >
+            + Add link
+          </button>
+        </div>
+      </label>
       <label className="flex cursor-pointer items-center gap-3 rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-3">
         <input
           type="checkbox"
@@ -144,7 +195,7 @@ function ProfileForm({
         <div>
           <p className="text-[13px] text-[#fafafa]">Public profile</p>
           <p className="text-[11px] text-[#52525b]">
-            Anyone with the link can view this profile (read-only, no login).
+            Enables a public URL. Choose which sections to show from the profile page.
           </p>
         </div>
       </label>
@@ -175,6 +226,7 @@ interface AgentProfilesManagerProps {
   workspaceSlug: string;
   initialProfiles: AgentProfileSummary[];
   initialOpenCreate?: boolean;
+  initialEditId?: string | null;
 }
 
 export function AgentProfilesManager({
@@ -182,12 +234,18 @@ export function AgentProfilesManager({
   workspaceSlug,
   initialProfiles,
   initialOpenCreate = false,
+  initialEditId = null,
 }: AgentProfilesManagerProps) {
   const [profiles, setProfiles] = useState<AgentProfileSummary[]>(initialProfiles);
-  const [modal, setModal] = useState<"create" | "edit" | null>(
-    initialOpenCreate ? "create" : null,
-  );
-  const [editing, setEditing] = useState<AgentProfileSummary | null>(null);
+  const [modal, setModal] = useState<"create" | "edit" | null>(() => {
+    if (initialOpenCreate) return "create";
+    if (initialEditId) return "edit";
+    return null;
+  });
+  const [editing, setEditing] = useState<AgentProfileSummary | null>(() => {
+    if (!initialEditId) return null;
+    return initialProfiles.find((p) => p.id === initialEditId) ?? null;
+  });
   const [saving, setSaving] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [copiedId, setCopiedId] = useState<string | null>(null);
@@ -281,8 +339,8 @@ export function AgentProfilesManager({
             Agent Profiles
           </h1>
           <p className="mt-1 max-w-2xl text-[13px] leading-relaxed text-[#71717a]">
-            Create shareable profiles for your agents. Public profiles get a read-only page
-            anyone can view — no login required.
+            GitHub-style judgment profiles for your agents. Open a profile for the daily dashboard,
+            then choose what to publish publicly.
           </p>
         </div>
         <button
@@ -320,10 +378,13 @@ export function AgentProfilesManager({
           {profiles.map((p) => (
             <div
               key={p.id}
-              className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a] p-4"
+              className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a] p-4 transition hover:border-[#3f3f46]"
             >
               <div className="flex flex-wrap items-start justify-between gap-3">
-                <div className="min-w-0 flex-1">
+                <Link
+                  href={`/${workspaceSlug}/agents/profiles/${p.id}`}
+                  className="min-w-0 flex-1 cursor-pointer"
+                >
                   <div className="flex items-center gap-2">
                     <h2 className="text-[15px] font-medium text-[#fafafa]">{p.name}</h2>
                     <span
@@ -354,8 +415,14 @@ export function AgentProfilesManager({
                       <span className="font-mono">SDK: {p.sdk_agent_id}</span>
                     ) : null}
                   </div>
-                </div>
+                </Link>
                 <div className="flex items-center gap-1">
+                  <Link
+                    href={`/${workspaceSlug}/agents/profiles/${p.id}`}
+                    className="rounded-full border border-[#27272a] px-3 py-1.5 text-[12px] text-[#a1a1aa] hover:bg-[#141414] hover:text-[#fafafa]"
+                  >
+                    Open profile
+                  </Link>
                   {p.is_public ? (
                     <>
                       <button

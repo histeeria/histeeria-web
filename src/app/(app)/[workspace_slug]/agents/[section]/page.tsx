@@ -13,7 +13,7 @@ interface PageProps {
     workspace_slug: string;
     section: string;
   };
-  searchParams?: Promise<{ new?: string }> | { new?: string };
+  searchParams?: Promise<{ new?: string; edit?: string }> | { new?: string; edit?: string };
 }
 
 export default async function AgentSectionPage({ params, searchParams }: PageProps) {
@@ -115,6 +115,7 @@ export default async function AgentSectionPage({ params, searchParams }: PagePro
         workspaceSlug={resolved.workspace_slug}
         initialProfiles={initialProfiles}
         initialOpenCreate={resolvedSearch.new === "1"}
+        initialEditId={resolvedSearch.edit ?? null}
       />
     );
   }
