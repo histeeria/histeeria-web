@@ -1,8 +1,9 @@
 "use client";
 
 import Link from "next/link";
-import { useState } from "react";
-import { ExternalLink, Loader2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
+import { Check, ExternalLink, Loader2, X } from "lucide-react";
 
 import type { SettingsResponse } from "@/lib/api";
 import { DOMAINS } from "@/lib/api";
@@ -24,6 +25,7 @@ interface SettingsManagerProps {
 }
 
 export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps) {
+  const router = useRouter();
   const [data, setData] = useState(initial);
   const [tab, setTab] = useState<TabId>("account");
   const [saving, setSaving] = useState(false);
@@ -33,6 +35,11 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
   const [fullName, setFullName] = useState(initial.account.full_name ?? "");
   const [role, setRole] = useState(initial.account.role ?? "");
   const [workspaceName, setWorkspaceName] = useState(initial.workspace.workspace_name);
+  const [workspaceSlugInput, setWorkspaceSlugInput] = useState(
+    initial.workspace.workspace_slug ?? workspaceSlug,
+  );
+  const [slugStatus, setSlugStatus] = useState<"idle" | "checking" | "available" | "taken">("idle");
+  const [slugMessage, setSlugMessage] = useState<string | null>(null);
   const [agentName, setAgentName] = useState(initial.workspace.agent_name);
   const [domainName, setDomainName] = useState(initial.workspace.domain_name);
   const [agentDescription, setAgentDescription] = useState(initial.workspace.agent_description ?? "");
@@ -42,8 +49,55 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
     initial.workspace.include_system_prompt_in_monitoring,
   );
 
+  const currentSlug = data.workspace.workspace_slug ?? workspaceSlug;
+  const slugChanged = workspaceSlugInput.trim() !== currentSlug;
+  const slugCheckTimer = useRef<number | null>(null);
+
+  function scheduleSlugCheck(next: string) {
+    if (slugCheckTimer.current) {
+      window.clearTimeout(slugCheckTimer.current);
+    }
+
+    const trimmed = next.trim();
+    if (!trimmed || trimmed === currentSlug) {
+      setSlugStatus("idle");
+      setSlugMessage(null);
+      return;
+    }
+
+    setSlugStatus("checking");
+    slugCheckTimer.current = window.setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/check-slug?slug=${encodeURIComponent(trimmed)}`);
+        const body = (await res.json()) as {
+          available?: boolean;
+          slug?: string;
+          reason?: string | null;
+          error?: string;
+        };
+        if (!res.ok) {
+          setSlugStatus("taken");
+          setSlugMessage(body.error ?? "Unable to verify slug.");
+          return;
+        }
+        if (body.slug && body.slug !== trimmed) {
+          setWorkspaceSlugInput(body.slug);
+        }
+        if (body.available) {
+          setSlugStatus("available");
+          setSlugMessage(`/${body.slug ?? trimmed} is available.`);
+        } else {
+          setSlugStatus("taken");
+          setSlugMessage(body.reason ?? "This slug is already taken.");
+        }
+      } catch {
+        setSlugStatus("taken");
+        setSlugMessage("Unable to verify slug availability.");
+      }
+    }, 400);
+  }
+
   async function save(section: TabId) {
-    setSaving(true);
     setError(null);
     setMessage(null);
 
@@ -53,7 +107,14 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
       payload.role = role;
     }
     if (section === "workspace") {
+      if (slugChanged && slugStatus !== "available") {
+        setError("Choose an available workspace slug before saving.");
+        return;
+      }
       payload.workspace_name = workspaceName;
+      if (slugChanged) {
+        payload.workspace_slug = workspaceSlugInput.trim();
+      }
       payload.include_system_prompt_in_monitoring = includeSystemPrompt;
     }
     if (section === "agent") {
@@ -66,6 +127,7 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
       payload.team_members = teamMembers;
     }
 
+    setSaving(true);
     try {
       const res = await fetch("/api/settings", {
         method: "PATCH",
@@ -79,6 +141,10 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
       const updated = (await res.json()) as SettingsResponse;
       setData(updated);
       setMessage("Settings saved.");
+      const nextSlug = updated.workspace.workspace_slug ?? workspaceSlug;
+      if (section === "workspace" && nextSlug !== workspaceSlug) {
+        router.replace(`/${nextSlug}/settings`);
+      }
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to save settings");
     } finally {
@@ -173,11 +239,43 @@ export function SettingsManager({ initial, workspaceSlug }: SettingsManagerProps
             />
           </Field>
           <Field label="Workspace slug">
-            <input
-              readOnly
-              value={data.workspace.workspace_slug ?? workspaceSlug}
-              className="w-full cursor-not-allowed rounded-[8px] border border-[#27272a] bg-[#141414] px-3 py-2 font-mono text-[13px] text-[#71717a]"
-            />
+            <div className="relative">
+              <span className="pointer-events-none absolute left-3 top-1/2 -translate-y-1/2 text-[13px] text-[#52525b]">
+                /
+              </span>
+              <input
+                value={workspaceSlugInput}
+                onChange={(e) => {
+                  const value = e.target.value.toLowerCase();
+                  setWorkspaceSlugInput(value);
+                  scheduleSlugCheck(value);
+                }}
+                className="w-full rounded-[8px] border border-[#27272a] bg-[#141414] py-2 pl-6 pr-10 font-mono text-[13px] text-[#fafafa] outline-none focus:border-[#52525b]"
+              />
+              <span className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2">
+                {slugStatus === "checking" ? (
+                  <Loader2 className="h-3.5 w-3.5 animate-spin text-[#71717a]" />
+                ) : slugStatus === "available" ? (
+                  <Check className="h-3.5 w-3.5 text-[#86efac]" />
+                ) : slugStatus === "taken" ? (
+                  <X className="h-3.5 w-3.5 text-[#fca5a5]" />
+                ) : null}
+              </span>
+            </div>
+            {slugMessage ? (
+              <p
+                className={cn(
+                  "text-[12px]",
+                  slugStatus === "available" ? "text-[#86efac]" : "text-[#fca5a5]",
+                )}
+              >
+                {slugMessage}
+              </p>
+            ) : (
+              <p className="text-[12px] text-[#52525b]">
+                Used in your workspace URL. Must be unique across Histeeria.
+              </p>
+            )}
           </Field>
           <label className="flex cursor-pointer items-start gap-3 rounded-[10px] border border-[#27272a] bg-[#0a0a0a] p-4">
             <input
