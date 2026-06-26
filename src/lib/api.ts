@@ -23,6 +23,7 @@ export type MeResponse = {
     onboarded: boolean;
     key_prefix: string | null;
     key_suffix: string | null;
+    include_system_prompt_in_monitoring: boolean;
   } | null;
 };
 
@@ -251,6 +252,25 @@ export async function getDecisionAgents(token: string) {
 
 export async function getDecisionStats(token: string) {
   return apiFetch<DecisionStats>("/v1/decisions/stats", { token });
+}
+
+export type WorkspaceSettings = {
+  include_system_prompt_in_monitoring: boolean;
+};
+
+export async function getWorkspaceSettings(token: string) {
+  return apiFetch<WorkspaceSettings>("/v1/workspace/settings", { token });
+}
+
+export async function updateWorkspaceSettings(
+  token: string,
+  payload: WorkspaceSettings,
+) {
+  return apiFetch<WorkspaceSettings>("/v1/workspace/settings", {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(payload),
+  });
 }
 
 export const DOMAINS = [
