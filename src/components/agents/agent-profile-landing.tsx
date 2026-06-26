@@ -1,7 +1,6 @@
 "use client";
 
 import Link from "next/link";
-import { AgentContextDisplay } from "@/components/agents/agent-context-display";
 import {
   CommonFlagsList,
   CostTrendChart,
@@ -10,6 +9,8 @@ import {
   ProfileGradeHeader,
   WorstDecisionsList,
 } from "@/components/agents/agent-profile-charts";
+import { AgentContextDisplay } from "@/components/agents/agent-context-display";
+import { PublicAgentProfile } from "@/components/agents/public-agent-profile";
 import { OwnerProfileSection } from "@/components/agents/owner-profile-section";
 import { profileThemeClass, useProfileTheme } from "@/components/agents/public-profile-theme";
 import { SocialLinkButton } from "@/components/agents/social-link-icon";
@@ -80,6 +81,17 @@ export function AgentProfileLanding({
   isPublicEnabled = false,
   onToggleSection,
 }: AgentProfileLandingProps) {
+  if (mode === "public" && publicSections) {
+    return (
+      <PublicAgentProfile
+        profile={profile}
+        dashboard={dashboard}
+        workspaceSlug={workspaceSlug}
+        publicSections={publicSections}
+      />
+    );
+  }
+
   const { isLight } = useProfileTheme();
   const { sections } = dashboard;
   const domainLabel = profile.domain?.replace(/_/g, " ") ?? null;

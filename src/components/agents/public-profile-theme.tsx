@@ -11,7 +11,7 @@ const ProfileThemeContext = createContext<{
   theme: ProfileTheme;
   toggle: () => void;
   isLight: boolean;
-}>({ theme: "dark", toggle: () => {}, isLight: false });
+}>({ theme: "light", toggle: () => {}, isLight: true });
 
 export function useProfileTheme() {
   return useContext(ProfileThemeContext);
@@ -25,7 +25,7 @@ export function PublicProfileThemeProvider({
   slug: string;
 }) {
   const storageKey = `histeeria.profile.theme.${slug}`;
-  const [theme, setTheme] = useState<ProfileTheme>("dark");
+  const [theme, setTheme] = useState<ProfileTheme>("light");
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) as ProfileTheme | null;
@@ -40,13 +40,25 @@ export function PublicProfileThemeProvider({
     });
   }
 
+  const isLight = theme === "light";
+
   return (
-    <ProfileThemeContext.Provider value={{ theme, toggle, isLight: theme === "light" }}>
+    <ProfileThemeContext.Provider value={{ theme, toggle, isLight }}>
       <div
         data-theme={theme}
+        style={
+          {
+            "--pp-bg": isLight ? "#fafafa" : "#09090b",
+            "--pp-fg": isLight ? "#18181b" : "#fafafa",
+            "--pp-muted": isLight ? "#71717a" : "#a1a1aa",
+            "--pp-border": isLight ? "#e4e4e7" : "#27272a",
+            "--pp-surface": isLight ? "#ffffff" : "#0a0a0a",
+            "--pp-surface-alt": isLight ? "#f4f4f5" : "#141414",
+          } as React.CSSProperties
+        }
         className={cn(
-          "min-h-screen transition-colors duration-300",
-          theme === "light" ? "bg-[#fafafa] text-[#18181b]" : "bg-black text-[#fafafa]",
+          "min-h-screen font-sans transition-colors duration-300",
+          isLight ? "bg-[#fafafa] text-[#18181b]" : "bg-[#09090b] text-[#fafafa]",
         )}
       >
         {children}
@@ -62,15 +74,15 @@ export function ProfileThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={toggle}
       className={cn(
-        "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 text-[12px] transition",
+        "inline-flex cursor-pointer items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition",
         isLight
-          ? "border-[#d4d4d8] bg-white text-[#52525b] hover:bg-[#f4f4f5]"
+          ? "border-[#e4e4e7] bg-white text-[#52525b] hover:bg-[#f4f4f5]"
           : "border-[#27272a] bg-[#141414] text-[#a1a1aa] hover:text-[#fafafa]",
         className,
       )}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
     >
-      {isLight ? <Moon className="h-3.5 w-3.5" /> : <Sun className="h-3.5 w-3.5" />}
+      {isLight ? <Moon className="h-3 w-3" /> : <Sun className="h-3 w-3" />}
       {isLight ? "Dark" : "Light"}
     </button>
   );
