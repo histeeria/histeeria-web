@@ -123,6 +123,10 @@ async function apiFetch<T>(
     throw new Error(message);
   }
 
+  if (response.status === 204) {
+    return undefined as T;
+  }
+
   return response.json() as Promise<T>;
 }
 
@@ -406,6 +410,74 @@ export async function updateWorkspaceSettings(
     token,
     body: JSON.stringify(payload),
   });
+}
+
+// --- Agent profiles --------------------------------------------------------
+
+export type AgentProfileSummary = {
+  id: string;
+  name: string;
+  slug: string;
+  description: string | null;
+  domain: string | null;
+  sdk_agent_id: string | null;
+  is_public: boolean;
+  created_at: string;
+  updated_at: string;
+};
+
+export type AgentProfilePayload = {
+  name: string;
+  slug?: string | null;
+  description?: string | null;
+  domain?: string | null;
+  sdk_agent_id?: string | null;
+  is_public?: boolean;
+};
+
+export type PublicAgentProfile = {
+  name: string;
+  slug: string;
+  description: string | null;
+  domain: string | null;
+  sdk_agent_id: string | null;
+  workspace_name: string;
+  workspace_slug: string;
+  updated_at: string;
+};
+
+export async function listAgentProfiles(token: string) {
+  return apiFetch<{ profiles: AgentProfileSummary[] }>("/v1/agent-profiles", { token });
+}
+
+export async function createAgentProfile(token: string, payload: AgentProfilePayload) {
+  return apiFetch<AgentProfileSummary>("/v1/agent-profiles", {
+    method: "POST",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function updateAgentProfile(
+  token: string,
+  id: string,
+  payload: Partial<AgentProfilePayload>,
+) {
+  return apiFetch<AgentProfileSummary>(`/v1/agent-profiles/${id}`, {
+    method: "PATCH",
+    token,
+    body: JSON.stringify(payload),
+  });
+}
+
+export async function deleteAgentProfile(token: string, id: string) {
+  return apiFetch<void>(`/v1/agent-profiles/${id}`, { method: "DELETE", token });
+}
+
+export async function getPublicAgentProfile(workspaceSlug: string, profileSlug: string) {
+  return apiFetch<PublicAgentProfile>(
+    `/v1/public/${encodeURIComponent(workspaceSlug)}/profiles/${encodeURIComponent(profileSlug)}`,
+  );
 }
 
 export const DOMAINS = [
