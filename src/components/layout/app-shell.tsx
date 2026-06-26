@@ -58,9 +58,9 @@ export function AppShell({ children, workspaceName, workspaceSlug }: AppShellPro
             <Image
               src="/logo-dark.png"
               alt="Histeeria"
-              width={28}
-              height={28}
-              className="h-7 w-auto object-contain"
+              width={32}
+              height={32}
+              className="h-8 w-auto object-contain"
             />
             <span className="text-[13px] font-medium text-[#a1a1aa]">Histeeria</span>
           </div>

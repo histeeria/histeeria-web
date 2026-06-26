@@ -61,9 +61,14 @@ export function Sidebar({
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
 
+  function navPath(href: string) {
+    return href.split("?")[0].split("#")[0];
+  }
+
   function isActive(href: string, external?: boolean) {
     if (external) return false;
-    return pathname === href || pathname.startsWith(`${href}/`);
+    const path = navPath(href);
+    return pathname === path || pathname.startsWith(`${path}/`);
   }
 
   const settingsHref = workspaceSlug ? `/${workspaceSlug}/settings` : "/settings";
@@ -93,13 +98,13 @@ export function Sidebar({
           )}
         >
           <div className={cn("flex min-w-0 items-center", collapsed ? "" : "gap-2.5")}>
-            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#141414]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#141414]">
               <Image
                 src="/logo-dark.png"
                 alt="Histeeria"
-                width={26}
-                height={26}
-                className="h-6 w-auto object-contain opacity-95"
+                width={36}
+                height={36}
+                className="h-9 w-auto object-contain opacity-95"
               />
             </div>
             {!collapsed ? (
@@ -221,10 +226,10 @@ export function Sidebar({
                         <Image
                           src="/logo-dark.png"
                           alt=""
-                          width={22}
-                          height={22}
+                          width={26}
+                          height={26}
                           className={cn(
-                            "h-[22px] w-[22px] shrink-0 object-contain",
+                            "h-[26px] w-[26px] shrink-0 object-contain",
                             active ? "opacity-100" : "opacity-75 group-hover:opacity-95",
                           )}
                         />
