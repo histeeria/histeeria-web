@@ -6,7 +6,6 @@ import { useState } from "react";
 import {
   ArrowLeft,
   Check,
-  Copy,
   ExternalLink,
   Globe,
   Loader2,
@@ -15,7 +14,6 @@ import {
   Trash2,
 } from "lucide-react";
 
-import { AgentProfileEditor } from "@/components/agents/agent-profile-editor";
 import { AgentProfileLanding } from "@/components/agents/agent-profile-landing";
 import type { AgentProfileDetailResponse, AgentProfileSummary, PublicSections } from "@/lib/api";
 import { cn } from "@/lib/utils";
@@ -34,7 +32,6 @@ export function AgentProfileDetail({ initial, workspaceSlug }: AgentProfileDetai
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
-  const [editOpen, setEditOpen] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
 
@@ -156,14 +153,13 @@ export function AgentProfileDetail({ initial, workspaceSlug }: AgentProfileDetai
                 <ExternalLink className="h-3 w-3" />
               </Link>
             ) : null}
-            <button
-              type="button"
-              onClick={() => setEditOpen(true)}
+            <Link
+              href={`/${workspaceSlug}/agents/profiles/${profile.id}/edit`}
               className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-[#27272a] px-3 py-1.5 text-[12px] text-[#a1a1aa] hover:bg-[#141414]"
             >
               <Pencil className="h-3.5 w-3.5" />
               Edit
-            </button>
+            </Link>
             <button
               type="button"
               onClick={deleteProfile}
@@ -194,17 +190,6 @@ export function AgentProfileDetail({ initial, workspaceSlug }: AgentProfileDetai
           onToggleSection={toggleSection}
         />
       </div>
-
-      {editOpen ? (
-        <AgentProfileEditor
-          profile={profile}
-          onClose={() => setEditOpen(false)}
-          onSaved={(updated) => {
-            setProfile(updated);
-            setPublicSections(updated.public_sections);
-          }}
-        />
-      ) : null}
     </div>
   );
 }
