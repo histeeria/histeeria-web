@@ -19,7 +19,9 @@ import {
 export interface NavItem {
   name: string;
   href: string;
-  icon: LucideIcon;
+  icon?: LucideIcon;
+  /** Render logo-dark.png instead of a Lucide icon */
+  iconImage?: boolean;
   badge?: string;
   external?: boolean;
 }
@@ -53,6 +55,7 @@ export function buildNavigation(slug: string): NavSection[] {
     {
       section: "Evaluation",
       items: [
+        { name: "Evaluation", href: `${base}/evaluation/engine`, iconImage: true },
         { name: "Reports", href: `${base}/evaluation/reports`, icon: FileText },
         { name: "Curriculum", href: `${base}/evaluation/curriculum`, icon: BookOpen },
         { name: "Judgement", href: `${base}/evaluation/judgement`, icon: Scale },
@@ -92,7 +95,7 @@ export function buildNavigation(slug: string): NavSection[] {
 }
 
 export const AGENT_SECTIONS = ["monitoring", "history", "profiles", "analytics", "api-keys"] as const;
-export const EVALUATION_SECTIONS = ["reports", "curriculum", "judgement"] as const;
+export const EVALUATION_SECTIONS = ["engine", "reports", "curriculum", "judgement"] as const;
 export const TEAM_SECTIONS = ["invite", "settings"] as const;
 
 export const SECTION_LABELS: Record<string, string> = {
@@ -101,6 +104,7 @@ export const SECTION_LABELS: Record<string, string> = {
   profiles: "Profiles",
   analytics: "Analytics",
   "api-keys": "API Keys",
+  engine: "Evaluation Engine",
   reports: "Reports",
   curriculum: "Curriculum",
   judgement: "Judgement",
