@@ -2,27 +2,56 @@ import type { Metadata } from "next";
 
 export const SITE_URL = process.env.NEXT_PUBLIC_APP_URL ?? "https://app.histeeria.com";
 
+/** Canonical brand/marketing domain — the primary knowledge-graph entity. */
+export const BRAND_URL = "https://histeeria.com";
+export const DOCS_URL = "https://docs.histeeria.com";
+
 export const SITE_NAME = "Histeeria";
+export const LEGAL_NAME = "Histeeria Inc.";
 
 export const SITE_DESCRIPTION =
-  "Infrastructure for machine judgment — monitor AI agents, evaluate decisions, and ship trustworthy automation.";
+  "Histeeria is the reliability layer for production AI agents — monitor agent decisions in real time, evaluate judgment across eight dimensions, get alerts on mistakes, and improve agents you can trust.";
 
 export const DEFAULT_OG_IMAGE = "/logo-dark1.png";
+
+export const SOCIAL_LINKS = [
+  "https://github.com/histeeria",
+  "https://linkedin.com/company/histeeria-imj",
+  "https://instagram.com/histeeria.imj",
+];
+
+export const SITE_KEYWORDS = [
+  "Histeeria",
+  "AI agent monitoring",
+  "AI agent evaluation",
+  "agent reliability",
+  "AI agent observability",
+  "machine judgment",
+  "LLM monitoring",
+  "agent analytics",
+  "agent profiles",
+];
 
 export const siteMetadata: Metadata = {
   metadataBase: new URL(SITE_URL),
   title: {
-    default: SITE_NAME,
+    default: `${SITE_NAME} — The Reliability Layer for Production AI Agents`,
     template: `%s · ${SITE_NAME}`,
   },
   description: SITE_DESCRIPTION,
   applicationName: SITE_NAME,
+  keywords: SITE_KEYWORDS,
+  authors: [{ name: SITE_NAME, url: BRAND_URL }],
+  creator: LEGAL_NAME,
+  publisher: LEGAL_NAME,
+  category: "technology",
+  alternates: { canonical: "/" },
   openGraph: {
     type: "website",
     locale: "en_US",
     url: SITE_URL,
     siteName: SITE_NAME,
-    title: SITE_NAME,
+    title: `${SITE_NAME} — The Reliability Layer for Production AI Agents`,
     description: SITE_DESCRIPTION,
     images: [
       {
@@ -35,9 +64,55 @@ export const siteMetadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: SITE_NAME,
+    title: `${SITE_NAME} — The Reliability Layer for Production AI Agents`,
     description: SITE_DESCRIPTION,
     images: [DEFAULT_OG_IMAGE],
+    creator: "@histeeria",
+    site: "@histeeria",
+  },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
+};
+
+/**
+ * Organization + WebApplication structured data. The Organization shares the
+ * same @id as the marketing site so search engines treat both domains as one
+ * brand entity in the Knowledge Graph.
+ */
+export const organizationSchema = {
+  "@context": "https://schema.org",
+  "@type": "Organization",
+  "@id": `${BRAND_URL}/#organization`,
+  name: SITE_NAME,
+  legalName: LEGAL_NAME,
+  url: BRAND_URL,
+  logo: `${BRAND_URL}/assets/logo-dark.png`,
+  sameAs: SOCIAL_LINKS,
+};
+
+export const webApplicationSchema = {
+  "@context": "https://schema.org",
+  "@type": "WebApplication",
+  "@id": `${SITE_URL}/#webapp`,
+  name: SITE_NAME,
+  url: SITE_URL,
+  applicationCategory: "DeveloperApplication",
+  operatingSystem: "Web",
+  description: SITE_DESCRIPTION,
+  publisher: { "@id": `${BRAND_URL}/#organization` },
+  offers: {
+    "@type": "Offer",
+    price: "0",
+    priceCurrency: "USD",
   },
 };
 

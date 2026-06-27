@@ -1,0 +1,22 @@
+# Histeeria (Application)
+
+> app.histeeria.com is the Histeeria web application — the reliability layer for production AI agents. Sign in to monitor agent decisions, evaluate judgment across eight dimensions, configure alerts, and view analytics. Public agent profiles are hosted here and are open to everyone.
+
+## Public, citable pages
+
+- Sign in / sign up: https://app.histeeria.com/login
+- Public agent profiles: https://app.histeeria.com/p/{workspace}/{agent}
+
+Agent profiles summarize an AI agent's judgment scores, analytics, and builder information. They are public and indexable.
+
+## Brand
+
+- Company: Histeeria Inc. ("Histeeria — Institute of Machine Judgment")
+- Marketing site: https://histeeria.com
+- Documentation: https://docs.histeeria.com
+- GitHub: https://github.com/histeeria
+- LinkedIn: https://linkedin.com/company/histeeria-imj
+
+## Not for indexing
+
+Dashboard, onboarding, settings, and API routes require authentication and should not be crawled or cited.

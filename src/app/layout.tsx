@@ -1,6 +1,10 @@
 import { Geist, Geist_Mono } from "next/font/google";
 
-import { siteMetadata } from "@/lib/metadata";
+import {
+  organizationSchema,
+  siteMetadata,
+  webApplicationSchema,
+} from "@/lib/metadata";
 
 import "./globals.css";
 
@@ -26,6 +30,17 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
+      <head>
+        <script
+          type="application/ld+json"
+          dangerouslySetInnerHTML={{
+            __html: JSON.stringify([
+              organizationSchema,
+              webApplicationSchema,
+            ]).replace(/</g, "\\u003c"),
+          }}
+        />
+      </head>
       <body className="min-h-full flex flex-col">{children}</body>
     </html>
   );
