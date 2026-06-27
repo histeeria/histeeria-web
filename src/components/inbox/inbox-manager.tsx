@@ -69,6 +69,11 @@ export function InboxManager({
   const [filter, setFilter] = useState<InboxFilter>("all");
   const [markingAll, setMarkingAll] = useState(false);
   const [loadingId, setLoadingId] = useState<string | null>(null);
+  const [visibleCount, setVisibleCount] = useState(20);
+
+  useEffect(() => {
+    setVisibleCount(20);
+  }, [filter]);
 
   const refresh = useCallback(async () => {
     const res = await fetch("/api/inbox");
@@ -188,55 +193,67 @@ export function InboxManager({
               <p className="text-[13px] text-[#71717a]">No messages in this filter.</p>
             </div>
           ) : (
-            filtered.map((message) => {
-              const Icon = typeIcon(message.type);
-              const isUnread = !message.read_at;
-              const isSelected = selected?.id === message.id;
-              return (
-                <button
-                  key={message.id}
-                  type="button"
-                  onClick={() => openMessage(message)}
-                  className={cn(
-                    "flex w-full cursor-pointer items-start gap-3 rounded-[10px] border px-4 py-3 text-left transition",
-                    isSelected ? "border-[#52525b] bg-[#141414]" : "border-[#27272a] bg-[#0a0a0a] hover:border-[#3f3f46]",
-                    isUnread && !isSelected && "border-[#3f3f46]",
-                  )}
-                >
-                  <div
+            <div className="space-y-2">
+              {filtered.slice(0, visibleCount).map((message) => {
+                const Icon = typeIcon(message.type);
+                const isUnread = !message.read_at;
+                const isSelected = selected?.id === message.id;
+                return (
+                  <button
+                    key={message.id}
+                    type="button"
+                    onClick={() => openMessage(message)}
                     className={cn(
-                      "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
-                      severityStyles(message.severity),
+                      "flex w-full cursor-pointer items-start gap-3 rounded-[10px] border px-4 py-3 text-left transition",
+                      isSelected ? "border-[#52525b] bg-[#141414]" : "border-[#27272a] bg-[#0a0a0a] hover:border-[#3f3f46]",
+                      isUnread && !isSelected && "border-[#3f3f46]",
                     )}
                   >
-                    {loadingId === message.id ? (
-                      <Loader2 className="h-4 w-4 animate-spin text-[#71717a]" />
-                    ) : (
-                      <Icon className="h-4 w-4 text-[#a1a1aa]" />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-2">
-                      <p
-                        className={cn(
-                          "truncate text-[13px]",
-                          isUnread ? "font-medium text-[#fafafa]" : "text-[#a1a1aa]",
-                        )}
-                      >
-                        {message.title}
-                      </p>
-                      <span className="shrink-0 text-[11px] text-[#52525b]">
-                        {relativeTime(message.created_at)}
-                      </span>
+                    <div
+                      className={cn(
+                        "mt-0.5 flex h-8 w-8 shrink-0 items-center justify-center rounded-md border",
+                        severityStyles(message.severity),
+                      )}
+                    >
+                      {loadingId === message.id ? (
+                        <Loader2 className="h-4 w-4 animate-spin text-[#71717a]" />
+                      ) : (
+                        <Icon className="h-4 w-4 text-[#a1a1aa]" />
+                      )}
                     </div>
-                    <p className="mt-1 line-clamp-2 text-[12px] text-[#71717a]">{message.body}</p>
-                  </div>
-                  {isUnread ? (
-                    <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#86efac]" />
-                  ) : null}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-2">
+                        <p
+                          className={cn(
+                            "truncate text-[13px]",
+                            isUnread ? "font-medium text-[#fafafa]" : "text-[#a1a1aa]",
+                          )}
+                        >
+                          {message.title}
+                        </p>
+                        <span className="shrink-0 text-[11px] text-[#52525b]">
+                          {relativeTime(message.created_at)}
+                        </span>
+                      </div>
+                      <p className="mt-1 line-clamp-2 text-[12px] text-[#71717a]">{message.body}</p>
+                    </div>
+                    {isUnread ? (
+                      <span className="mt-2 h-2 w-2 shrink-0 rounded-full bg-[#86efac]" />
+                    ) : null}
+                  </button>
+                );
+              })}
+              
+              {filtered.length > visibleCount && (
+                <button
+                  type="button"
+                  onClick={() => setVisibleCount((prev) => prev + 20)}
+                  className="w-full py-2.5 px-4 text-[13px] text-[#a1a1aa] border border-[#27272a] bg-[#0a0a0a] rounded-[10px] hover:border-[#3f3f46] hover:text-[#fafafa] transition cursor-pointer font-medium"
+                >
+                  Load more
                 </button>
-              );
-            })
+              )}
+            </div>
           )}
         </div>
 

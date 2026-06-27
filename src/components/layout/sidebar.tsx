@@ -14,7 +14,6 @@ import {
   PanelLeft,
   PanelLeftClose,
   Plus,
-  Search,
   Settings,
   UserPlus,
 } from "lucide-react";
@@ -192,23 +191,6 @@ export function Sidebar({
         ) : null}
       </div>
 
-      {/* Search */}
-      {!collapsed ? (
-        <div className="shrink-0 px-3 py-3">
-          <button
-            type="button"
-            className="flex w-full cursor-pointer items-center justify-between rounded-[8px] border border-[#27272a] bg-[#0a0a0a] px-3 py-2 text-[12px] text-[#71717a] transition hover:border-[#3f3f46] hover:text-[#a1a1aa]"
-          >
-            <span className="flex items-center gap-2">
-              <Search className="h-3.5 w-3.5" />
-              Search
-            </span>
-            <kbd className="rounded border border-[#27272a] bg-[#141414] px-1.5 py-0.5 font-mono text-[10px] text-[#52525b]">
-              ⌘K
-            </kbd>
-          </button>
-        </div>
-      ) : null}
 
       {/* Nav */}
       <nav className="sidebar-scroll min-h-0 flex-1 space-y-5 overflow-y-auto px-2 pb-4">

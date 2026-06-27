@@ -10,6 +10,7 @@ import {
   Key,
   LayoutDashboard,
   Scale,
+  Terminal,
   UserCircle,
   UserPlus,
 } from "lucide-react";
@@ -72,6 +73,11 @@ export function buildNavigation(slug: string, unreadCount = 0): NavSection[] {
     {
       section: "Histeeria",
       items: [
+        {
+          name: "SDK install",
+          href: `${base}/sdk-install`,
+          icon: Terminal,
+        },
         {
           name: "Documentation",
           href: "https://histeeria.com/docs",
