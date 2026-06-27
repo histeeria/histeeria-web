@@ -5,7 +5,7 @@ import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
+import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -45,6 +45,19 @@ function GoogleIcon() {
 
 type AuthState = "signin" | "signup" | "otp" | "register" | "forgot" | "reset";
 
+const titleClass = "text-[24px] font-semibold tracking-tight text-[#fafafa]";
+const subtitleClass = "text-[13px] leading-relaxed text-[#a1a1aa]";
+const linkClass = "font-medium text-[#9aa8ff] transition-colors hover:text-[#c7ceff] hover:underline";
+const labelClass = "text-[12px] font-medium text-[#a1a1aa]";
+const inputClass =
+  "w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[14px] text-[#ededed] placeholder:text-[#52525b] outline-none transition-colors focus:border-[#4f5ea3] focus:bg-[#101524]";
+const socialButtonClass =
+  "group relative w-full justify-center rounded-[10px] border border-[#27272a] bg-[#0a0a0a] text-[#ededed] transition-colors hover:border-[#3f3f46] hover:bg-[#141414] hover:text-[#fafafa]";
+const primaryButtonClass =
+  "w-full justify-center rounded-[10px] border border-[#363f6a] bg-[#1a1f39] text-[#eef0ff] font-medium text-[13px] transition-colors hover:bg-[#222a4d] disabled:opacity-70";
+const infoClass = "rounded-[10px] border border-[#2a3261] bg-[#151b33] px-3 py-2 text-center text-[12px] text-[#c7ceff]";
+const errorClass = "rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-300";
+
 export function LoginForm() {
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/onboarding";
@@ -66,9 +79,14 @@ export function LoginForm() {
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
+  function clearMessages() {
+    setError(null);
+    setInfo(null);
+  }
+
   async function handleSocialSignIn(provider: "google" | "github") {
     setLoadingProvider(provider);
-    setError(null);
+    clearMessages();
     try {
       await signIn(provider, { callbackUrl });
     } catch {
@@ -81,7 +99,7 @@ export function LoginForm() {
     e.preventDefault();
     if (!email || !password) return;
     setLoading(true);
-    setError(null);
+    clearMessages();
     try {
       const res = await signIn("credentials", {
         email,
@@ -107,8 +125,7 @@ export function LoginForm() {
     e.preventDefault();
     if (!email) return;
     setLoading(true);
-    setError(null);
-    setInfo(null);
+    clearMessages();
     try {
       const endpoint = isReset ? "/v1/auth/forgot-password" : "/v1/auth/otp/send";
       const res = await fetch(`${API_URL}${endpoint}`, {
@@ -135,8 +152,7 @@ export function LoginForm() {
     e.preventDefault();
     if (!otp || otp.length !== 6) return;
     setLoading(true);
-    setError(null);
-    setInfo(null);
+    clearMessages();
     try {
       const res = await fetch(`${API_URL}/v1/auth/otp/verify`, {
         method: "POST",
@@ -173,7 +189,7 @@ export function LoginForm() {
       return;
     }
     setLoading(true);
-    setError(null);
+    clearMessages();
     try {
       // Execute registration via next-auth credentials authorization
       const res = await signIn("credentials", {
@@ -207,7 +223,7 @@ export function LoginForm() {
       return;
     }
     setLoading(true);
-    setError(null);
+    clearMessages();
     try {
       const res = await fetch(`${API_URL}/v1/auth/reset-password`, {
         method: "POST",
@@ -241,17 +257,59 @@ export function LoginForm() {
     }
   }
 
+  function SocialButtons() {
+    return (
+      <div className="grid gap-2.5">
+        <Button
+          type="button"
+          variant="secondary"
+          className={socialButtonClass}
+          disabled={Boolean(loadingProvider)}
+          onClick={() => void handleSocialSignIn("google")}
+        >
+          <span className="flex items-center gap-2.5">
+            {loadingProvider === "google" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <GoogleIcon />
+            )}
+            <span className="text-[13px] font-medium">
+              {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
+            </span>
+          </span>
+        </Button>
+        <Button
+          type="button"
+          variant="secondary"
+          className={socialButtonClass}
+          disabled={Boolean(loadingProvider)}
+          onClick={() => void handleSocialSignIn("github")}
+        >
+          <span className="flex items-center gap-2.5">
+            {loadingProvider === "github" ? (
+              <Loader2 className="h-3.5 w-3.5 animate-spin" />
+            ) : (
+              <GitHubIcon />
+            )}
+            <span className="text-[13px] font-medium">
+              {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
+            </span>
+          </span>
+        </Button>
+      </div>
+    );
+  }
+
   return (
     <div className="flex flex-col items-center">
-      {/* Centered Histeeria Logo */}
       <div className="mb-6 flex items-center justify-center">
         <Image
           src="/logo-dark.png"
           alt="Histeeria Logo"
-          width={40}
-          height={40}
+          width={46}
+          height={46}
           priority
-          className="h-10 w-auto object-contain"
+          className="h-11 w-auto object-contain"
         />
       </div>
 
@@ -265,85 +323,39 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Sign in to Histeeria
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Sign in to Histeeria</h1>
+              <p className={subtitleClass}>
                 Don&apos;t have an account?{" "}
                 <button
                   type="button"
                   onClick={() => {
                     setState("signup");
-                    setError(null);
-                    setInfo(null);
+                    clearMessages();
                   }}
-                  className="font-medium text-[#10b981] hover:underline"
+                  className={linkClass}
                 >
                   Get started &rarr;
                 </button>
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
-                {info}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
+            {info && <div className={infoClass}>{info}</div>}
 
-            <div className="grid gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
-                disabled={Boolean(loadingProvider)}
-                onClick={() => void handleSocialSignIn("google")}
-              >
-                <span className="flex items-center gap-2">
-                  {loadingProvider === "google" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <GoogleIcon />
-                  )}
-                  <span className="text-[13px] font-medium">
-                    {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
-                  </span>
-                </span>
-              </Button>
-              <Button
-                type="button"
-                variant="secondary"
-                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
-                disabled={Boolean(loadingProvider)}
-                onClick={() => void handleSocialSignIn("github")}
-              >
-                <span className="flex items-center gap-2">
-                  {loadingProvider === "github" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <GitHubIcon />
-                  )}
-                  <span className="text-[13px] font-medium">
-                    {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
-                  </span>
-                </span>
-              </Button>
-            </div>
+            <SocialButtons />
 
-            <div className="relative flex py-2 items-center justify-center">
+           
+
+            <div className="relative flex items-center justify-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />
-              <span className="flex-shrink mx-4 text-[11px] font-mono uppercase tracking-widest text-[#52525b]">or</span>
+              <span className="mx-4 flex-shrink text-[11px] uppercase tracking-[0.2em] text-[#52525b]">or</span>
               <div className="flex-grow border-t border-[#27272a]" />
             </div>
 
             <form onSubmit={(e) => void handleEmailSignIn(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <label className={labelClass}>Enter your email</label>
                 <input
                   type="email"
                   value={email}
@@ -351,21 +363,20 @@ export function LoginForm() {
                   placeholder="name@email.com"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
               <div className="space-y-1.5">
                 <div className="flex items-center justify-between">
-                  <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your password</label>
+                  <label className={labelClass}>Enter your password</label>
                   <button
                     type="button"
                     onClick={() => {
                       setState("forgot");
-                      setError(null);
-                      setInfo(null);
+                      clearMessages();
                     }}
-                    className="text-[11px] font-medium text-[#10b981] hover:underline"
+                    className="text-[10px] font-medium text-[#9aa8ff] transition-colors hover:text-[#c7ceff] hover:underline"
                   >
                     Forgot password?
                   </button>
@@ -378,7 +389,7 @@ export function LoginForm() {
                     placeholder="••••••••"
                     required
                     disabled={loading}
-                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                    className={`${inputClass} pr-10`}
                   />
                   <button
                     type="button"
@@ -390,11 +401,7 @@ export function LoginForm() {
                 </div>
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
               </Button>
             </form>
@@ -410,62 +417,36 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Get Started with Histeeria
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Get started with Histeeria</h1>
+              <p className={subtitleClass}>
                 Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => {
                     setState("signin");
-                    setError(null);
-                    setInfo(null);
+                    clearMessages();
                   }}
-                  className="font-medium text-[#10b981] hover:underline"
+                  className={linkClass}
                 >
                   Sign in &rarr;
                 </button>
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
 
-            <div className="grid gap-2">
-              <Button
-                type="button"
-                variant="secondary"
-                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
-                disabled={Boolean(loadingProvider)}
-                onClick={() => void handleSocialSignIn("google")}
-              >
-                <span className="flex items-center gap-2">
-                  {loadingProvider === "google" ? (
-                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
-                  ) : (
-                    <GoogleIcon />
-                  )}
-                  <span className="text-[13px] font-medium">
-                    Continue with Google
-                  </span>
-                </span>
-              </Button>
-            </div>
+            <SocialButtons />
 
-            <div className="relative flex py-2 items-center justify-center">
+            <div className="relative flex items-center justify-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />
-              <span className="flex-shrink mx-4 text-[11px] font-mono uppercase tracking-widest text-[#52525b]">or</span>
+              <span className="mx-4 flex-shrink text-[11px] uppercase tracking-[0.2em] text-[#52525b]">or</span>
               <div className="flex-grow border-t border-[#27272a]" />
             </div>
 
             <form onSubmit={(e) => void handleSendOTP(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <label className={labelClass}>Enter your email</label>
                 <input
                   type="email"
                   value={email}
@@ -473,15 +454,11 @@ export function LoginForm() {
                   placeholder="name@email.com"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
               </Button>
             </form>
@@ -497,29 +474,19 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Verify your email
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Verify your email</h1>
+              <p className={subtitleClass}>
                 We sent a 6-digit code to <span className="text-[#ededed] font-medium">{email}</span>.
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
-                {info}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
+            {info && <div className={infoClass}>{info}</div>}
 
             <form onSubmit={(e) => void handleVerifyOTP(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter 6-digit code</label>
+                <label className={labelClass}>Enter 6-digit code</label>
                 <input
                   type="text"
                   maxLength={6}
@@ -528,15 +495,11 @@ export function LoginForm() {
                   placeholder="123456"
                   required
                   disabled={loading}
-                  className="w-full text-center tracking-[0.25em] font-mono text-lg rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={`${inputClass} text-center font-mono text-lg tracking-[0.25em]`}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading || otp.length !== 6}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify Code"}
               </Button>
             </form>
@@ -546,17 +509,16 @@ export function LoginForm() {
                 type="button"
                 onClick={() => {
                   setState("signup");
-                  setError(null);
-                  setInfo(null);
+                  clearMessages();
                 }}
-                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+                className="text-[11px] font-medium text-[#71717a] transition-colors hover:text-[#fafafa]"
               >
                 &larr; Back
               </button>
               <button
                 type="button"
                 onClick={(e) => void handleSendOTP(e)}
-                className="text-[11px] font-medium text-[#10b981] hover:underline"
+                className={linkClass}
               >
                 Resend code
               </button>
@@ -573,24 +535,18 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Complete your profile
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Complete your profile</h1>
+              <p className={subtitleClass}>
                 Set your name and password to get started.
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
 
             <form onSubmit={(e) => void handleCompleteRegistration(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your full name</label>
+                <label className={labelClass}>Enter your full name</label>
                 <input
                   type="text"
                   value={fullName}
@@ -598,24 +554,24 @@ export function LoginForm() {
                   placeholder="John Doe"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Profile Photo URL (optional)</label>
+                <label className={labelClass}>Profile Photo URL (optional)</label>
                 <input
                   type="url"
                   value={avatarUrl}
                   onChange={(e) => setAvatarUrl(e.target.value)}
                   placeholder="https://example.com/photo.jpg"
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Password</label>
+                <label className={labelClass}>Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -624,7 +580,7 @@ export function LoginForm() {
                     placeholder="••••••••"
                     required
                     disabled={loading}
-                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                    className={`${inputClass} pr-10`}
                   />
                   <button
                     type="button"
@@ -637,7 +593,7 @@ export function LoginForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Confirm Password</label>
+                <label className={labelClass}>Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -645,15 +601,11 @@ export function LoginForm() {
                   placeholder="••••••••"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
               </Button>
             </form>
@@ -669,24 +621,18 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Reset your password
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Reset your password</h1>
+              <p className={subtitleClass}>
                 Enter your email address and we&apos;ll send you a 6-digit code.
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
 
             <form onSubmit={(e) => void handleSendOTP(e, true)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <label className={labelClass}>Enter your email</label>
                 <input
                   type="email"
                   value={email}
@@ -694,15 +640,11 @@ export function LoginForm() {
                   placeholder="name@email.com"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Reset Code"}
               </Button>
             </form>
@@ -712,10 +654,9 @@ export function LoginForm() {
                 type="button"
                 onClick={() => {
                   setState("signin");
-                  setError(null);
-                  setInfo(null);
+                  clearMessages();
                 }}
-                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+                className="text-[11px] font-medium text-[#71717a] transition-colors hover:text-[#fafafa]"
               >
                 &larr; Back to sign in
               </button>
@@ -732,29 +673,19 @@ export function LoginForm() {
             transition={{ duration: 0.2 }}
             className="w-full space-y-5"
           >
-            <div className="space-y-1 text-center">
-              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
-                Reset your password
-              </h1>
-              <p className="text-[12px] text-[#71717a]">
+            <div className="space-y-1.5 text-center">
+              <h1 className={titleClass}>Reset your password</h1>
+              <p className={subtitleClass}>
                 Enter the verification code and set your new password.
               </p>
             </div>
 
-            {error && (
-              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
-                {error}
-              </div>
-            )}
-            {info && (
-              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
-                {info}
-              </div>
-            )}
+            {error && <div className={errorClass}>{error}</div>}
+            {info && <div className={infoClass}>{info}</div>}
 
             <form onSubmit={(e) => void handleResetPassword(e)} className="space-y-4">
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter 6-digit code</label>
+                <label className={labelClass}>Enter 6-digit code</label>
                 <input
                   type="text"
                   maxLength={6}
@@ -763,12 +694,12 @@ export function LoginForm() {
                   placeholder="123456"
                   required
                   disabled={loading}
-                  className="w-full text-center tracking-[0.25em] font-mono text-lg rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={`${inputClass} text-center font-mono text-lg tracking-[0.25em]`}
                 />
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">New Password</label>
+                <label className={labelClass}>New Password</label>
                 <div className="relative">
                   <input
                     type={showPassword ? "text" : "password"}
@@ -777,7 +708,7 @@ export function LoginForm() {
                     placeholder="••••••••"
                     required
                     disabled={loading}
-                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                    className={`${inputClass} pr-10`}
                   />
                   <button
                     type="button"
@@ -790,7 +721,7 @@ export function LoginForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-[12px] font-medium text-[#a1a1aa]">Confirm Password</label>
+                <label className={labelClass}>Confirm Password</label>
                 <input
                   type="password"
                   value={confirmPassword}
@@ -798,15 +729,11 @@ export function LoginForm() {
                   placeholder="••••••••"
                   required
                   disabled={loading}
-                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  className={inputClass}
                 />
               </div>
 
-              <Button
-                type="submit"
-                disabled={loading || otp.length !== 6}
-                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
-              >
+              <Button type="submit" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reset Password"}
               </Button>
             </form>
@@ -816,10 +743,9 @@ export function LoginForm() {
                 type="button"
                 onClick={() => {
                   setState("signin");
-                  setError(null);
-                  setInfo(null);
+                  clearMessages();
                 }}
-                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+                className="text-[11px] font-medium text-[#71717a] transition-colors hover:text-[#fafafa]"
               >
                 &larr; Back to sign in
               </button>
@@ -835,7 +761,7 @@ export function LoginForm() {
             href="https://histeeria.com/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-[#71717a] hover:text-[#fafafa] underline underline-offset-2 transition-colors"
+            className="font-medium text-[#71717a] underline underline-offset-2 transition-colors hover:text-[#9aa8ff]"
           >
             Terms of Service
           </a>{" "}
@@ -844,7 +770,7 @@ export function LoginForm() {
             href="https://histeeria.com/privacy"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-[#71717a] hover:text-[#fafafa] underline underline-offset-2 transition-colors"
+            className="font-medium text-[#71717a] underline underline-offset-2 transition-colors hover:text-[#9aa8ff]"
           >
             Privacy Policy
           </a>
