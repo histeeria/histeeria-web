@@ -123,12 +123,12 @@ export function Sidebar({
           )}
         >
           <div className={cn("flex min-w-0 items-center", collapsed ? "" : "gap-2.5")}>
-            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#141414]">
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-lg">
               <Image
                 src="/logo-dark.png"
                 alt="Histeeria"
-                width={36}
-                height={36}
+                width={42}
+                height={42}
                 className="h-9 w-auto object-contain opacity-95"
               />
             </div>
