@@ -8,6 +8,7 @@ import { AnimatePresence, motion } from "framer-motion";
 import { Eye, EyeOff, Loader2 } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
+import { MediaUploadField } from "@/components/agents/media-upload-field";
 
 function GitHubIcon() {
   return (
@@ -561,14 +562,16 @@ export function LoginForm() {
               </div>
 
               <div className="space-y-1.5">
-                <label className={labelClass}>Profile Photo URL (optional)</label>
-                <input
-                  type="url"
+                <MediaUploadField
+                  layout="compact"
+                  label="Profile Photo (optional)"
+                  hint="Select jpeg, jpg, png only (max 2MB)"
+                  purpose="owner_avatar"
                   value={avatarUrl}
-                  onChange={(e) => setAvatarUrl(e.target.value)}
-                  placeholder="https://example.com/photo.jpg"
-                  disabled={loading}
-                  className={inputClass}
+                  onChange={setAvatarUrl}
+                  variant="image"
+                  allowUrl={true}
+                  previewClassName="h-32 w-32 object-cover rounded-full"
                 />
               </div>
 
