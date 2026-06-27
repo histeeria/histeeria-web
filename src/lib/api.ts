@@ -50,6 +50,7 @@ export type OnboardingResponse = {
 export type DecisionSummary = {
   id: string;
   agent_id: string | null;
+  sub_agent_id?: string | null;
   session_id: string | null;
   domain: string | null;
   input_preview: string;
@@ -65,6 +66,7 @@ export type DecisionSummary = {
 export type DecisionDetail = {
   id: string;
   agent_id: string | null;
+  sub_agent_id?: string | null;
   session_id: string | null;
   domain: string | null;
   input: unknown;
@@ -77,10 +79,19 @@ export type DecisionDetail = {
   received_at: string;
 };
 
-export type AgentSummary = {
-  agent_id: string;
+export type SubAgentSummary = {
+  sub_agent_id: string;
   decision_count: number;
   last_received_at: string | null;
+};
+
+export type AgentSummary = {
+  agent_id: string;
+  profile_id?: string | null;
+  profile_name?: string | null;
+  decision_count: number;
+  last_received_at: string | null;
+  sub_agents?: SubAgentSummary[];
 };
 
 export type DecisionListResponse = {
@@ -173,6 +184,7 @@ export type ApiKeySummary = {
   id: string;
   name: string;
   agent_name: string;
+  agent_profile_id?: string | null;
   status: "active" | "revoked";
   tracking_id: string;
   secret_masked: string;
@@ -188,7 +200,8 @@ export type ApiKeyListResponse = {
 
 export type ApiKeyCreatePayload = {
   name: string;
-  agent_name: string;
+  agent_name?: string;
+  agent_profile_id?: string;
   permissions: ApiKeyPermission;
 };
 
@@ -199,6 +212,7 @@ export type ApiKeyCreateResponse = ApiKeySummary & {
 
 export type ApiKeyUpdatePayload = {
   name?: string;
+  agent_profile_id?: string;
   permissions?: ApiKeyPermission;
 };
 
@@ -237,12 +251,13 @@ export async function deleteApiKey(token: string, keyId: string) {
 
 export async function getDecisions(
   token: string,
-  options: { limit?: number; offset?: number; agentId?: string } = {},
+  options: { limit?: number; offset?: number; agentId?: string; subAgentId?: string } = {},
 ) {
   const params = new URLSearchParams();
   params.set("limit", String(options.limit ?? 50));
   if (options.offset) params.set("offset", String(options.offset));
   if (options.agentId) params.set("agent_id", options.agentId);
+  if (options.subAgentId) params.set("sub_agent_id", options.subAgentId);
   return apiFetch<DecisionListResponse>(`/v1/decisions?${params.toString()}`, { token });
 }
 

@@ -408,7 +408,7 @@ export function AgentProfileEditForm({ profile, workspaceSlug }: AgentProfileEdi
               <label className="block space-y-2">
                 <span className={labelClass}>SDK agent ID</span>
                 <input value={sdkAgentId} onChange={(e) => setSdkAgentId(e.target.value)} placeholder="security_scanner" className={cn(fieldClass, "font-mono")} />
-                <p className="text-[11px] text-[#52525b]">Matches your SDK instrumentation to unlock judgment charts.</p>
+                <p className="text-[11px] text-[#52525b]">Parent agent identifier for monitoring and evaluation. Defaults to your profile slug. Sub-components in your code use optional observe agent_id labels.</p>
               </label>
             </div>
             <div className="space-y-3 border-t border-[#27272a] pt-5">

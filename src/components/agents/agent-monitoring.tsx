@@ -343,6 +343,7 @@ export function AgentMonitoring({
   const [selectedDecisionId, setSelectedDecisionId] = useState<string | null>(
     initialDecisions[0]?.id ?? null,
   );
+  const [selectedSubAgentId, setSelectedSubAgentId] = useState<string | null>(null);
   const [detail, setDetail] = useState<DecisionDetail | null>(initialDetail);
   const [detailLoading, setDetailLoading] = useState(false);
   const [live, setLive] = useState(true);
@@ -356,26 +357,36 @@ export function AgentMonitoring({
 
   const selectedAgentIdRef = useRef(selectedAgentId);
   const selectedDecisionIdRef = useRef(selectedDecisionId);
+  const selectedSubAgentIdRef = useRef(selectedSubAgentId);
+
+  function decisionsUrl(agentId: string | null, subAgentId: string | null) {
+    if (!agentId) return "/api/decisions?limit=100";
+    const params = new URLSearchParams({ agent_id: agentId, limit: "100" });
+    if (subAgentId) params.set("sub_agent_id", subAgentId);
+    return `/api/decisions?${params.toString()}`;
+  }
+
+  const selectedAgent = agents.find((agent) => agent.agent_id === selectedAgentId) ?? null;
 
   useEffect(() => {
     selectedAgentIdRef.current = selectedAgentId;
     selectedDecisionIdRef.current = selectedDecisionId;
-  }, [selectedAgentId, selectedDecisionId]);
+    selectedSubAgentIdRef.current = selectedSubAgentId;
+  }, [selectedAgentId, selectedDecisionId, selectedSubAgentId]);
 
   const refresh = useCallback(async (silent = false) => {
     if (!silent) setRefreshing(true);
     setError(null);
 
     const agentId = selectedAgentIdRef.current;
+    const subAgentId = selectedSubAgentIdRef.current;
     const agentsUrl = "/api/decisions/agents";
-    const decisionsUrl = agentId
-      ? `/api/decisions?agent_id=${encodeURIComponent(agentId)}&limit=100`
-      : "/api/decisions?limit=100";
+    const decisionsFetchUrl = decisionsUrl(agentId, subAgentId);
 
     try {
       const [agentsRes, decisionsRes] = await Promise.all([
         fetch(agentsUrl),
-        fetch(decisionsUrl),
+        fetch(decisionsFetchUrl),
       ]);
 
       if (!agentsRes.ok || !decisionsRes.ok) {
@@ -423,14 +434,16 @@ export function AgentMonitoring({
 
   async function selectAgent(agentId: string) {
     selectedAgentIdRef.current = agentId;
+    selectedSubAgentIdRef.current = null;
     setSelectedAgentId(agentId);
+    setSelectedSubAgentId(null);
     setDetailLoading(true);
     setError(null);
 
     try {
       const [agentsRes, decisionsRes] = await Promise.all([
         fetch("/api/decisions/agents"),
-        fetch(`/api/decisions?agent_id=${encodeURIComponent(agentId)}&limit=100`),
+        fetch(decisionsUrl(agentId, null)),
       ]);
 
       if (!agentsRes.ok || !decisionsRes.ok) {
@@ -480,6 +493,41 @@ export function AgentMonitoring({
       setError(err instanceof Error ? err.message : "Failed to update setting");
     } finally {
       setSavingPrivacy(false);
+    }
+  }
+
+  async function selectSubAgent(subAgentId: string | null) {
+    const agentId = selectedAgentIdRef.current;
+    if (!agentId) return;
+
+    selectedSubAgentIdRef.current = subAgentId;
+    setSelectedSubAgentId(subAgentId);
+    setDetailLoading(true);
+    setError(null);
+
+    try {
+      const decisionsRes = await fetch(decisionsUrl(agentId, subAgentId));
+      if (!decisionsRes.ok) throw new Error("Failed to load filtered decisions");
+
+      const decisionsData = (await decisionsRes.json()) as { decisions: DecisionSummary[] };
+      setDecisions(decisionsData.decisions);
+      setLastUpdated(new Date());
+
+      const firstId = decisionsData.decisions[0]?.id ?? null;
+      setSelectedDecisionId(firstId);
+
+      if (firstId) {
+        const detailRes = await fetch(`/api/decisions/${firstId}`);
+        if (!detailRes.ok) throw new Error("Failed to load decision detail");
+        setDetail((await detailRes.json()) as DecisionDetail);
+      } else {
+        setDetail(null);
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to filter decisions");
+      setDetail(null);
+    } finally {
+      setDetailLoading(false);
     }
   }
 
@@ -652,10 +700,13 @@ export function AgentMonitoring({
                       />
                       <div className="min-w-0 flex-1">
                         <p className="truncate text-[13px] font-medium capitalize">
-                          {formatAgentLabel(agent.agent_id)}
+                          {agent.profile_name ?? formatAgentLabel(agent.agent_id)}
                         </p>
                         <p className="mt-0.5 text-[11px] text-[#52525b]">
                           {agent.decision_count} decisions · {relativeTime(agent.last_received_at)}
+                          {agent.sub_agents && agent.sub_agents.length > 0
+                            ? ` · ${agent.sub_agents.length} components`
+                            : ""}
                         </p>
                       </div>
                     </button>
@@ -672,10 +723,41 @@ export function AgentMonitoring({
             <p className="text-[11px] font-medium uppercase tracking-wide text-[#52525b]">
               Decision log
             </p>
-            {selectedAgentId ? (
-              <p className="mt-0.5 text-[12px] capitalize text-[#71717a]">
-                {formatAgentLabel(selectedAgentId)}
+            {selectedAgent ? (
+              <p className="mt-0.5 text-[12px] text-[#71717a]">
+                {selectedAgent.profile_name ?? formatAgentLabel(selectedAgent.agent_id)}
               </p>
+            ) : null}
+            {selectedAgent?.sub_agents && selectedAgent.sub_agents.length > 0 ? (
+              <div className="mt-2 flex flex-wrap gap-1">
+                <button
+                  type="button"
+                  onClick={() => void selectSubAgent(null)}
+                  className={cn(
+                    "cursor-pointer rounded-full px-2 py-0.5 text-[10px] transition",
+                    selectedSubAgentId === null
+                      ? "bg-[#27272a] text-[#fafafa]"
+                      : "text-[#71717a] hover:text-[#a1a1aa]",
+                  )}
+                >
+                  All
+                </button>
+                {selectedAgent.sub_agents.map((sub) => (
+                  <button
+                    key={sub.sub_agent_id}
+                    type="button"
+                    onClick={() => void selectSubAgent(sub.sub_agent_id)}
+                    className={cn(
+                      "cursor-pointer rounded-full px-2 py-0.5 text-[10px] capitalize transition",
+                      selectedSubAgentId === sub.sub_agent_id
+                        ? "bg-[#27272a] text-[#fafafa]"
+                        : "text-[#71717a] hover:text-[#a1a1aa]",
+                    )}
+                  >
+                    {formatAgentLabel(sub.sub_agent_id)}
+                  </button>
+                ))}
+              </div>
             ) : null}
           </div>
           <div className="flex-1 overflow-y-auto custom-scroll">
@@ -714,6 +796,11 @@ export function AgentMonitoring({
                           {decision.output_preview}
                         </p>
                         <div className="mt-1.5 flex flex-wrap gap-1.5">
+                          {decision.sub_agent_id ? (
+                            <span className="rounded bg-[#141414] px-1.5 py-0.5 text-[9px] capitalize text-[#a1a1aa]">
+                              {formatAgentLabel(decision.sub_agent_id)}
+                            </span>
+                          ) : null}
                           {decision.has_reasoning ? (
                             <span className="inline-flex items-center gap-1 rounded bg-[#1e1b4b]/40 px-1.5 py-0.5 text-[9px] text-[#a5b4fc]">
                               <Brain className="h-2.5 w-2.5" />

@@ -28,6 +28,7 @@ export async function GET(request: Request) {
 
   const { searchParams } = new URL(request.url);
   const agentId = searchParams.get("agent_id") ?? undefined;
+  const subAgentId = searchParams.get("sub_agent_id") ?? undefined;
   const limit = Number(searchParams.get("limit") ?? "50");
   const offset = Number(searchParams.get("offset") ?? "0");
   const includeStats = searchParams.get("stats") === "1";
@@ -37,6 +38,7 @@ export async function GET(request: Request) {
       limit: Number.isFinite(limit) ? limit : 50,
       offset: Number.isFinite(offset) ? offset : 0,
       agentId,
+      subAgentId,
     });
     const statsPromise = includeStats ? getDecisionStats(token) : Promise.resolve(null);
 

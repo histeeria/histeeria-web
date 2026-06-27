@@ -12,7 +12,7 @@ import {
   X,
 } from "lucide-react";
 
-import type { ApiKeyPermission, ApiKeySummary, MeResponse } from "@/lib/api";
+import type { ApiKeyPermission, ApiKeySummary, AgentProfileSummary, MeResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 const PERMISSION_OPTIONS: { value: ApiKeyPermission; label: string }[] = [
@@ -69,12 +69,14 @@ interface ApiKeysManagerProps {
   profile: MeResponse;
   workspaceSlug: string;
   initialKeys: ApiKeySummary[];
+  initialProfiles: AgentProfileSummary[];
 }
 
 export function ApiKeysManager({
   profile,
   workspaceSlug,
   initialKeys,
+  initialProfiles,
 }: ApiKeysManagerProps) {
   const [keys, setKeys] = useState<ApiKeySummary[]>(initialKeys);
   const [loading, setLoading] = useState(false);
@@ -86,11 +88,12 @@ export function ApiKeysManager({
   const [deletingKey, setDeletingKey] = useState<ApiKeySummary | null>(null);
 
   const [createName, setCreateName] = useState("");
-  const [createAgent, setCreateAgent] = useState(profile.organization?.agent_name ?? "");
+  const [createProfileId, setCreateProfileId] = useState(initialProfiles[0]?.id ?? "");
   const [createPermissions, setCreatePermissions] = useState<ApiKeyPermission>("read_write");
   const [creating, setCreating] = useState(false);
 
   const [editName, setEditName] = useState("");
+  const [editProfileId, setEditProfileId] = useState("");
   const [editPermissions, setEditPermissions] = useState<ApiKeyPermission>("read_write");
   const [saving, setSaving] = useState(false);
 
@@ -114,7 +117,7 @@ export function ApiKeysManager({
   }
 
   async function handleCreate() {
-    if (!createName.trim()) return;
+    if (!createName.trim() || !createProfileId) return;
     setCreating(true);
     setError(null);
     try {
@@ -123,7 +126,7 @@ export function ApiKeysManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: createName.trim(),
-          agent_name: createAgent.trim() || defaultAgent,
+          agent_profile_id: createProfileId,
           permissions: createPermissions,
         }),
       });
@@ -145,6 +148,7 @@ export function ApiKeysManager({
   function openEdit(key: ApiKeySummary) {
     setEditingKey(key);
     setEditName(key.name);
+    setEditProfileId(key.agent_profile_id ?? initialProfiles[0]?.id ?? "");
     setEditPermissions(key.permissions);
   }
 
@@ -158,6 +162,7 @@ export function ApiKeysManager({
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           name: editName.trim(),
+          agent_profile_id: editProfileId || undefined,
           permissions: editPermissions,
         }),
       });
@@ -220,7 +225,7 @@ export function ApiKeysManager({
           <button
             type="button"
             onClick={() => {
-              setCreateAgent(defaultAgent);
+              setCreateProfileId(initialProfiles[0]?.id ?? "");
               setShowCreate(true);
             }}
             className="inline-flex items-center gap-1.5 rounded-full bg-[#fafafa] px-4 py-2 text-[13px] font-medium text-black transition hover:bg-[#e4e4e7]"
@@ -347,14 +352,25 @@ export function ApiKeysManager({
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-[13px] font-medium text-[#a1a1aa]">For agent</label>
+              <label className="block text-[13px] font-medium text-[#a1a1aa]">Agent profile</label>
               <select
-                value={createAgent}
-                onChange={(e) => setCreateAgent(e.target.value)}
+                value={createProfileId}
+                onChange={(e) => setCreateProfileId(e.target.value)}
                 className="w-full rounded-[10px] border border-[#27272a] bg-[#141414] px-3.5 py-2.5 text-sm text-[#fafafa] outline-none focus:border-[#3f3f46]"
               >
-                <option value={defaultAgent}>{defaultAgent}</option>
+                {initialProfiles.length === 0 ? (
+                  <option value="">Create an agent profile first</option>
+                ) : (
+                  initialProfiles.map((agentProfile) => (
+                    <option key={agentProfile.id} value={agentProfile.id}>
+                      {agentProfile.name}
+                    </option>
+                  ))
+                )}
               </select>
+              <p className="text-[11px] text-[#52525b]">
+                All SDK observations using this key roll up under the selected agent profile.
+              </p>
             </div>
             <div className="space-y-2">
               <label className="block text-[13px] font-medium text-[#a1a1aa]">Permissions</label>
@@ -380,7 +396,7 @@ export function ApiKeysManager({
               </button>
               <button
                 type="button"
-                disabled={creating || !createName.trim()}
+                disabled={creating || !createName.trim() || !createProfileId}
                 onClick={handleCreate}
                 className="rounded-full bg-[#fafafa] px-4 py-2 text-[13px] font-medium text-black disabled:opacity-50"
               >
@@ -425,7 +441,7 @@ export function ApiKeysManager({
         <Modal title="Edit API key" onClose={() => setEditingKey(null)}>
           <div className="space-y-4">
             <p className="text-[12px] text-[#52525b]">
-              Agent and secret key cannot be changed. Create a new key to rotate credentials.
+              Link this key to an agent profile so monitoring and evaluation roll up correctly.
             </p>
             <div className="space-y-2">
               <label className="block text-[13px] font-medium text-[#a1a1aa]">Name</label>
@@ -436,12 +452,18 @@ export function ApiKeysManager({
               />
             </div>
             <div className="space-y-2">
-              <label className="block text-[13px] font-medium text-[#a1a1aa]">For agent</label>
-              <input
-                value={editingKey.agent_name}
-                disabled
-                className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-sm text-[#52525b] cursor-not-allowed"
-              />
+              <label className="block text-[13px] font-medium text-[#a1a1aa]">Agent profile</label>
+              <select
+                value={editProfileId}
+                onChange={(e) => setEditProfileId(e.target.value)}
+                className="w-full rounded-[10px] border border-[#27272a] bg-[#141414] px-3.5 py-2.5 text-sm text-[#fafafa] outline-none focus:border-[#3f3f46]"
+              >
+                {initialProfiles.map((agentProfile) => (
+                  <option key={agentProfile.id} value={agentProfile.id}>
+                    {agentProfile.name}
+                  </option>
+                ))}
+              </select>
             </div>
             <div className="space-y-2">
               <label className="block text-[13px] font-medium text-[#a1a1aa]">Permissions</label>

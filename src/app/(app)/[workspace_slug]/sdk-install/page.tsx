@@ -1,7 +1,7 @@
 import { notFound, redirect } from "next/navigation";
 
 import { SdkInstallManager } from "@/components/agents/sdk-install-manager";
-import { getDecisionAgents, listAgentProfiles } from "@/lib/api";
+import { getDecisionAgents, listAgentProfiles, listApiKeys } from "@/lib/api";
 import { getCurrentUserProfile, getSessionToken, requireSession } from "@/lib/server";
 
 interface PageProps {
@@ -25,14 +25,17 @@ export default async function SdkInstallPage({ params }: PageProps) {
 
   let initialAgents: Awaited<ReturnType<typeof getDecisionAgents>>["agents"] = [];
   let initialProfiles: Awaited<ReturnType<typeof listAgentProfiles>>["profiles"] = [];
+  let initialKeys: Awaited<ReturnType<typeof listApiKeys>>["keys"] = [];
 
   try {
-    const [agentsData, profilesData] = await Promise.all([
+    const [agentsData, profilesData, keysData] = await Promise.all([
       getDecisionAgents(token),
       listAgentProfiles(token),
+      listApiKeys(token),
     ]);
     initialAgents = agentsData.agents;
     initialProfiles = profilesData.profiles;
+    initialKeys = keysData.keys;
   } catch (error) {
     console.error("Failed to load SDK install data:", error);
   }
@@ -42,6 +45,7 @@ export default async function SdkInstallPage({ params }: PageProps) {
       profile={profile}
       initialAgents={initialAgents}
       initialProfiles={initialProfiles}
+      initialKeys={initialKeys}
     />
   );
 }

@@ -20,7 +20,7 @@ import {
   WifiOff,
 } from "lucide-react";
 
-import type { AgentSummary, AgentProfileSummary, MeResponse } from "@/lib/api";
+import type { AgentSummary, AgentProfileSummary, ApiKeySummary, MeResponse } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 function relativeTime(value: string | null) {
@@ -41,12 +41,14 @@ interface SdkInstallManagerProps {
   profile: MeResponse;
   initialAgents: AgentSummary[];
   initialProfiles: AgentProfileSummary[];
+  initialKeys: ApiKeySummary[];
 }
 
 export function SdkInstallManager({
   profile,
   initialAgents,
   initialProfiles,
+  initialKeys,
 }: SdkInstallManagerProps) {
   const [activeTab, setActiveTab] = useState<"guide" | "status">("status");
   const [sdkLang, setSdkLang] = useState<"python" | "typescript">("python");
@@ -73,7 +75,7 @@ response = your_llm_call(messages)
 h.observe(
     input=messages,
     output=response,
-    agent_id="synthesis", # Match your agent profile SDK ID
+    agent_id="orchestrator",  # optional: labels sub-components inside your agent
     session_id="sess_abc",
     domain="general"
 )`,
@@ -86,7 +88,7 @@ const response = await yourLLMCall(messages);
 h.observe({
   input: messages,
   output: response,
-  agentId: "synthesis", // Match your agent profile SDK ID
+  agentId: "orchestrator", // optional: labels sub-components inside your agent
   sessionId: "sess_abc",
   domain: "general"
 });`,
@@ -107,26 +109,30 @@ h.observe({
     }
   };
 
-  // Find connections that match our profiles, or active unmapped agents
-  const mappedStatus = initialProfiles.map((p) => {
-    const match = initialAgents.find(
-      (a) => a.agent_id.toLowerCase() === p.sdk_agent_id?.toLowerCase()
+  const profileStatuses = initialProfiles.map((agentProfile) => {
+    const linkedKey = initialKeys.find(
+      (key) => key.agent_profile_id === agentProfile.id && key.status === "active",
+    );
+    const canonicalId = agentProfile.sdk_agent_id ?? agentProfile.slug;
+    const activity = initialAgents.find(
+      (agent) =>
+        agent.profile_id === agentProfile.id ||
+        agent.agent_id.toLowerCase() === canonicalId.toLowerCase(),
     );
     return {
-      profile: p,
-      agentId: p.sdk_agent_id,
-      isConnected: !!match && match.decision_count > 0,
-      decisionCount: match ? match.decision_count : 0,
-      lastReceivedAt: match ? match.last_received_at : null,
+      profile: agentProfile,
+      linkedKey,
+      canonicalId,
+      isConnected: !!linkedKey && !!activity && activity.decision_count > 0,
+      decisionCount: activity?.decision_count ?? 0,
+      lastReceivedAt: activity?.last_received_at ?? null,
+      subAgents: activity?.sub_agents ?? [],
     };
   });
 
-  const registeredSdkIds = new Set(
-    initialProfiles.map((p) => p.sdk_agent_id?.toLowerCase()).filter(Boolean)
-  );
-
-  const unmappedAgents = initialAgents.filter(
-    (a) => !registeredSdkIds.has(a.agent_id.toLowerCase())
+  const connectedCount = profileStatuses.filter((item) => item.isConnected).length;
+  const unlinkedKeys = initialKeys.filter(
+    (key) => key.status === "active" && !key.agent_profile_id,
   );
 
   return (
@@ -169,9 +175,9 @@ h.observe({
           )}
         >
           SDK Statuses
-          {initialAgents.length > 0 && (
+          {connectedCount > 0 && (
             <span className="ml-1.5 rounded-full bg-[#14532d]/40 px-1.5 py-0.5 text-[10px] font-medium text-[#86efac]">
-              {initialAgents.length} Active
+              {connectedCount} Connected
             </span>
           )}
         </button>
@@ -197,7 +203,7 @@ h.observe({
             <div>
               <p className="font-medium text-[#fafafa]">Key Integration Concepts</p>
               <p className="mt-1">
-                The Histeeria SDK runs inline with your agent logic. When your agent performs an LLM completion or processes a critical decision, send the prompt context and returned model choice as an observation to Histeeria using <code className="text-[#fafafa] font-mono">h.observe()</code>.
+                Create an agent profile in Histeeria, generate an API key linked to that profile, then initialize the SDK with that key. All sub-components inside your agent (orchestrators, models, tools) roll up under the same profile automatically — use <code className="text-[#fafafa] font-mono">agent_id</code> in observe calls only to label internal components.
               </p>
             </div>
           </div>
@@ -351,7 +357,7 @@ h.observe({
               </Link>
             </div>
 
-            {mappedStatus.length === 0 ? (
+            {profileStatuses.length === 0 ? (
               <div className="rounded-[12px] border border-dashed border-[#27272a] bg-[#0a0a0a] px-4 py-12 text-center space-y-3">
                 <Cpu className="mx-auto h-8 w-8 text-[#52525b]" />
                 <p className="text-[13px] text-[#71717a]">No agent profiles registered yet in this workspace.</p>
@@ -364,7 +370,8 @@ h.observe({
               </div>
             ) : (
               <div className="grid gap-4 md:grid-cols-2">
-                {mappedStatus.map(({ profile: p, agentId, isConnected, decisionCount, lastReceivedAt }) => (
+                {profileStatuses.map(
+                  ({ profile: p, linkedKey, canonicalId, isConnected, decisionCount, lastReceivedAt, subAgents }) => (
                   <div
                     key={p.id}
                     className="flex flex-col justify-between rounded-[10px] border border-[#27272a] bg-[#0a0a0a] p-5 transition hover:border-[#3f3f46]"
@@ -375,11 +382,16 @@ h.observe({
                           <h3 className="text-[15px] font-medium text-[#fafafa]">
                             {p.name}
                           </h3>
-                          <div className="mt-1 flex items-center gap-2 font-mono text-[11px] text-[#52525b]">
-                            <span>SDK ID:</span>
+                          <div className="mt-1 flex flex-wrap items-center gap-2 font-mono text-[11px] text-[#52525b]">
+                            <span>Agent ID:</span>
                             <span className="text-[#a1a1aa] bg-[#141414] px-1.5 py-0.5 rounded border border-[#27272a]">
-                              {agentId || "not set"}
+                              {canonicalId}
                             </span>
+                            {linkedKey ? (
+                              <span className="text-[#86efac]">Key linked</span>
+                            ) : (
+                              <span className="text-[#fbbf24]">No API key linked</span>
+                            )}
                           </div>
                         </div>
 
@@ -388,7 +400,9 @@ h.observe({
                             "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[11px] font-medium border",
                             isConnected
                               ? "bg-[#14532d]/20 text-[#86efac] border-[#14532d]/40"
-                              : "bg-[#27272a]/40 text-[#71717a] border-[#27272a]"
+                              : linkedKey
+                                ? "bg-[#422006]/50 text-[#fbbf24] border-[#78350f]/40"
+                                : "bg-[#27272a]/40 text-[#71717a] border-[#27272a]"
                           )}
                         >
                           <span
@@ -397,13 +411,19 @@ h.observe({
                               isConnected ? "animate-pulse bg-[#86efac]" : "bg-[#52525b]"
                             )}
                           />
-                          {isConnected ? "Connected" : "Pending"}
+                          {isConnected ? "Connected" : linkedKey ? "Awaiting data" : "Not linked"}
                         </div>
                       </div>
 
                       <p className="mt-3 line-clamp-2 text-[12px] text-[#71717a] min-h-[32px]">
                         {p.description || "No description provided."}
                       </p>
+
+                      {subAgents.length > 0 ? (
+                        <p className="mt-2 text-[11px] text-[#52525b]">
+                          {subAgents.length} internal components reporting
+                        </p>
+                      ) : null}
                     </div>
 
                     <div className="mt-4 pt-3 border-t border-[#27272a] flex items-center justify-between text-[11px]">
@@ -424,45 +444,33 @@ h.observe({
             )}
           </div>
 
-          {/* Unmapped Active Connections section */}
-          {unmappedAgents.length > 0 && (
+          {unlinkedKeys.length > 0 && (
             <div className="pt-2">
               <div className="mb-3 flex items-center gap-2">
-                <Wifi className="h-4 w-4 text-[#86efac]" />
+                <Key className="h-4 w-4 text-[#fbbf24]" />
                 <h2 className="text-[14px] font-medium text-[#a1a1aa] uppercase tracking-wider">
-                  Unmapped Active SDK Connections ({unmappedAgents.length})
+                  API Keys Without Agent Profile ({unlinkedKeys.length})
                 </h2>
               </div>
               <div className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a] overflow-hidden">
                 <div className="border-b border-[#27272a] bg-[#0d0d0d] px-4 py-2.5 text-[12px] text-[#71717a] leading-relaxed">
-                  We are receiving telemetry from these agent IDs, but they do not correspond to any registered profiles in this workspace. Create an agent profile with the matching SDK ID to map them.
+                  Link each API key to an agent profile so all SDK observations roll up under that agent — including orchestrators and sub-models.
                 </div>
                 <ul className="divide-y divide-[#27272a]">
-                  {unmappedAgents.map((agent) => (
+                  {unlinkedKeys.map((key) => (
                     <li
-                      key={agent.agent_id}
-                      className="flex flex-wrap items-center justify-between gap-4 px-4 py-3 hover:bg-[#141414]/10 transition"
+                      key={key.id}
+                      className="flex flex-wrap items-center justify-between gap-4 px-4 py-3"
                     >
-                      <div className="flex items-center gap-4">
-                        <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg border border-[#27272a] bg-[#141414]">
-                          <Cpu className="h-4 w-4 text-[#a1a1aa]" />
-                        </div>
-                        <div>
-                          <p className="font-mono text-[13px] font-medium text-[#fafafa]">
-                            {agent.agent_id}
-                          </p>
-                          <p className="mt-0.5 text-[11px] text-[#52525b]">
-                            {agent.decision_count} decisions processed · Last active{" "}
-                            {relativeTime(agent.last_received_at)}
-                          </p>
-                        </div>
+                      <div>
+                        <p className="text-[13px] font-medium text-[#fafafa]">{key.name}</p>
+                        <p className="mt-0.5 font-mono text-[11px] text-[#52525b]">{key.secret_masked}</p>
                       </div>
-
                       <Link
-                        href={`/${org?.workspace_slug}/agents/profiles?new=1&sdk_id=${encodeURIComponent(agent.agent_id)}`}
+                        href={`/${org?.workspace_slug}/agents/api-keys`}
                         className="inline-flex cursor-pointer items-center gap-1.5 rounded-md border border-[#27272a] bg-black px-3 py-1.5 text-[11px] text-[#a1a1aa] hover:border-[#3f3f46] hover:text-[#fafafa] transition"
                       >
-                        Create Profile
+                        Link to profile
                         <ArrowRight className="h-3 w-3" />
                       </Link>
                     </li>
@@ -472,13 +480,12 @@ h.observe({
             </div>
           )}
 
-          {/* Verification Tip */}
           <div className="rounded-[10px] border border-[#27272a] bg-[#0a0a0a]/50 p-4 text-[12px] text-[#71717a] flex items-start gap-3">
             <Info className="h-4 w-4 text-[#a1a1aa] mt-0.5 shrink-0" />
             <div>
-              <p className="font-medium text-[#a1a1aa]">How does connection mapping work?</p>
+              <p className="font-medium text-[#a1a1aa]">How agent identity works</p>
               <p className="mt-1 leading-relaxed">
-                When sending an observation through the SDK, you specify an <code className="text-[#a1a1aa] font-mono">agentId</code> parameter (e.g. <code className="text-[#a1a1aa] font-mono">agent_001</code>). If you create an Agent Profile on Histeeria and set its "SDK agent ID" to that exact value, the connection is instantly mapped, unlocking specialized behavior metrics, chart history, and telemetry tracking.
+                Your Histeeria agent profile is the parent identity. The API key authenticates traffic for that agent. The optional <code className="text-[#a1a1aa] font-mono">agent_id</code> in SDK observe calls labels internal components (orchestrator, synthesis, security scanner, etc.) — they all roll up under the same profile for monitoring, evaluation, and analytics.
               </p>
             </div>
           </div>

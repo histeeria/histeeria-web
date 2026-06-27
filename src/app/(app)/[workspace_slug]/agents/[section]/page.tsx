@@ -79,12 +79,18 @@ export default async function AgentSectionPage({ params, searchParams }: PagePro
   if (section === "api-keys") {
     const token = await getSessionToken();
     let initialKeys: Awaited<ReturnType<typeof listApiKeys>>["keys"] = [];
+    let initialProfiles: Awaited<ReturnType<typeof listAgentProfiles>>["profiles"] = [];
     if (token) {
       try {
-        const data = await listApiKeys(token);
-        initialKeys = data.keys;
+        const [keysData, profilesData] = await Promise.all([
+          listApiKeys(token),
+          listAgentProfiles(token),
+        ]);
+        initialKeys = keysData.keys;
+        initialProfiles = profilesData.profiles;
       } catch {
         initialKeys = [];
+        initialProfiles = [];
       }
     }
 
@@ -93,6 +99,7 @@ export default async function AgentSectionPage({ params, searchParams }: PagePro
         profile={profile}
         workspaceSlug={resolved.workspace_slug}
         initialKeys={initialKeys}
+        initialProfiles={initialProfiles}
       />
     );
   }
