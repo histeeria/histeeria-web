@@ -50,11 +50,11 @@ const subtitleClass = "text-[13px] leading-relaxed text-[#a1a1aa]";
 const linkClass = "font-medium text-[#9aa8ff] transition-colors hover:text-[#c7ceff] hover:underline";
 const labelClass = "text-[12px] font-medium text-[#a1a1aa]";
 const inputClass =
-  "w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[14px] text-[#ededed] placeholder:text-[#52525b] outline-none transition-colors focus:border-[#4f5ea3] focus:bg-[#101524]";
+  "w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[14px] text-[#ededed] placeholder:text-[#52525b] outline-none transition-colors focus:border-[#4f5ea3] focus:bg-[#101524] disabled:cursor-not-allowed disabled:opacity-70";
 const socialButtonClass =
-  "group relative w-full justify-center rounded-[10px] border border-[#27272a] bg-[#0a0a0a] text-[#ededed] transition-colors hover:border-[#3f3f46] hover:bg-[#141414] hover:text-[#fafafa]";
+  "group relative w-full cursor-pointer justify-center rounded-[10px] border border-[#27272a] bg-[#0a0a0a] text-[#ededed] shadow-none transition-colors hover:border-[#3f3f46] hover:bg-[#141414] hover:text-[#fafafa] disabled:cursor-not-allowed";
 const primaryButtonClass =
-  "w-full justify-center rounded-[10px] border border-[#363f6a] bg-[#1a1f39] text-[#eef0ff] font-medium text-[13px] transition-colors hover:bg-[#222a4d] disabled:opacity-70";
+  "w-full cursor-pointer justify-center rounded-[10px] border border-[#363f6a] bg-[#1a1f39] text-[#eef0ff] font-medium text-[13px] shadow-none transition-colors hover:border-[#49558d] hover:bg-[#20284a] disabled:cursor-not-allowed disabled:opacity-60";
 const infoClass = "rounded-[10px] border border-[#2a3261] bg-[#151b33] px-3 py-2 text-center text-[12px] text-[#c7ceff]";
 const errorClass = "rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-300";
 
@@ -76,6 +76,7 @@ export function LoginForm() {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError ? "Authentication failed." : null);
   const [info, setInfo] = useState<string | null>(null);
+  const isBusy = loading || Boolean(loadingProvider);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
@@ -264,7 +265,7 @@ export function LoginForm() {
           type="button"
           variant="secondary"
           className={socialButtonClass}
-          disabled={Boolean(loadingProvider)}
+          disabled={isBusy}
           onClick={() => void handleSocialSignIn("google")}
         >
           <span className="flex items-center gap-2.5">
@@ -282,7 +283,7 @@ export function LoginForm() {
           type="button"
           variant="secondary"
           className={socialButtonClass}
-          disabled={Boolean(loadingProvider)}
+          disabled={isBusy}
           onClick={() => void handleSocialSignIn("github")}
         >
           <span className="flex items-center gap-2.5">
@@ -376,7 +377,8 @@ export function LoginForm() {
                       setState("forgot");
                       clearMessages();
                     }}
-                    className="text-[10px] font-medium text-[#9aa8ff] transition-colors hover:text-[#c7ceff] hover:underline"
+                    className="cursor-pointer text-[10px] font-normal leading-none text-[#8f9bdc] transition-colors hover:text-[#c7ceff] hover:underline"
+                    style={{ fontSize: "12px", lineHeight: "12px" }}
                   >
                     Forgot password?
                   </button>
@@ -401,7 +403,7 @@ export function LoginForm() {
                 </div>
               </div>
 
-              <Button type="submit" disabled={loading} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
               </Button>
             </form>
@@ -458,7 +460,7 @@ export function LoginForm() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
               </Button>
             </form>
@@ -499,7 +501,7 @@ export function LoginForm() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify Code"}
               </Button>
             </form>
@@ -605,7 +607,7 @@ export function LoginForm() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
               </Button>
             </form>
@@ -644,7 +646,7 @@ export function LoginForm() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Reset Code"}
               </Button>
             </form>
@@ -733,7 +735,7 @@ export function LoginForm() {
                 />
               </div>
 
-              <Button type="submit" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
+              <Button type="submit" variant="secondary" disabled={loading || otp.length !== 6} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reset Password"}
               </Button>
             </form>
