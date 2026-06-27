@@ -4,6 +4,8 @@ import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useState } from "react";
+import { AnimatePresence, motion } from "framer-motion";
+import { ArrowRight, Eye, EyeOff, Loader2, Sparkles } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
 
@@ -41,95 +43,799 @@ function GoogleIcon() {
   );
 }
 
+type AuthState = "signin" | "signup" | "otp" | "register" | "forgot" | "reset";
+
 export function LoginForm() {
   const searchParams = useSearchParams();
-  const callbackUrl = searchParams.get("callbackUrl") ?? "/";
-  const error = searchParams.get("error");
-  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const callbackUrl = searchParams.get("callbackUrl") ?? "/onboarding";
+  const initialError = searchParams.get("error");
 
-  async function handleSignIn(provider: "google" | "github") {
+  const [state, setState] = useState<AuthState>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [fullName, setFullName] = useState("");
+  const [avatarUrl, setAvatarUrl] = useState("");
+  const [otp, setOtp] = useState("");
+  
+  const [showPassword, setShowPassword] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
+  const [error, setError] = useState<string | null>(initialError ? "Authentication failed." : null);
+  const [info, setInfo] = useState<string | null>(null);
+
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+
+  async function handleSocialSignIn(provider: "google" | "github") {
     setLoadingProvider(provider);
-    await signIn(provider, { callbackUrl });
+    setError(null);
+    try {
+      await signIn(provider, { callbackUrl });
+    } catch {
+      setError(`Failed to sign in with ${provider}.`);
+      setLoadingProvider(null);
+    }
+  }
+
+  async function handleEmailSignIn(e: React.FormEvent) {
+    e.preventDefault();
+    if (!email || !password) return;
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await signIn("credentials", {
+        email,
+        password,
+        callbackUrl,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError(res.error);
+        setLoading(false);
+      } else {
+        // Successful login, redirect
+        window.location.href = callbackUrl;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Invalid email or password.");
+      setLoading(false);
+    }
+  }
+
+  async function handleSendOTP(e: React.FormEvent, isReset = false) {
+    e.preventDefault();
+    if (!email) return;
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const endpoint = isReset ? "/v1/auth/forgot-password" : "/v1/auth/otp/send";
+      const res = await fetch(`${API_URL}${endpoint}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { detail?: string };
+        throw new Error(data.detail || "Failed to send code.");
+      }
+
+      setInfo(`A 6-digit code has been sent to ${email}.`);
+      setState(isReset ? "reset" : "otp");
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send verification code.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleVerifyOTP(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otp || otp.length !== 6) return;
+    setLoading(true);
+    setError(null);
+    setInfo(null);
+    try {
+      const res = await fetch(`${API_URL}/v1/auth/otp/verify`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otp }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { detail?: string };
+        throw new Error(data.detail || "Invalid code.");
+      }
+
+      const data = (await res.json()) as { exists: boolean };
+      if (data.exists) {
+        // If user already exists, let them sign in with password
+        setInfo("Verification successful. Please sign in.");
+        setState("signin");
+      } else {
+        // If user is new, complete profile registration
+        setState("register");
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to verify code.");
+    } finally {
+      setLoading(false);
+    }
+  }
+
+  async function handleCompleteRegistration(e: React.FormEvent) {
+    e.preventDefault();
+    if (!fullName || !password || !confirmPassword) return;
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      // Execute registration via next-auth credentials authorization
+      const res = await signIn("credentials", {
+        email,
+        password,
+        code: otp,
+        fullName,
+        avatarUrl: avatarUrl || undefined,
+        isRegister: "true",
+        callbackUrl,
+        redirect: false,
+      });
+
+      if (res?.error) {
+        setError(res.error);
+        setLoading(false);
+      } else {
+        window.location.href = callbackUrl;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to create account.");
+      setLoading(false);
+    }
+  }
+
+  async function handleResetPassword(e: React.FormEvent) {
+    e.preventDefault();
+    if (!otp || !password || !confirmPassword) return;
+    if (password !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setLoading(true);
+    setError(null);
+    try {
+      const res = await fetch(`${API_URL}/v1/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, code: otp, password }),
+      });
+
+      if (!res.ok) {
+        const data = (await res.json()) as { detail?: string };
+        throw new Error(data.detail || "Password reset failed.");
+      }
+
+      // Password reset succeeded, sign them in automatically
+      const loginRes = await signIn("credentials", {
+        email,
+        password,
+        callbackUrl,
+        redirect: false,
+      });
+
+      if (loginRes?.error) {
+        setInfo("Password reset successful. Please sign in.");
+        setState("signin");
+      } else {
+        window.location.href = callbackUrl;
+      }
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to reset password.");
+    } finally {
+      setLoading(false);
+    }
   }
 
   return (
-    <div className="flex flex-col items-center space-y-6">
+    <div className="flex flex-col items-center">
       {/* Centered Histeeria Logo */}
-      <div className="mb-2">
+      <div className="mb-6 flex items-center justify-center">
         <Image
           src="/logo-dark.png"
           alt="Histeeria Logo"
-          width={64}
-          height={64}
+          width={40}
+          height={40}
           priority
-          className="h-16 w-auto object-contain"
+          className="h-10 w-auto object-contain"
         />
       </div>
 
-      <div className="space-y-1.5 text-center">
-        <h1 className="text-2xl font-semibold tracking-tight text-foreground">
-          Sign in to Histeeria
-        </h1>
-        <p className="text-[13px] leading-relaxed text-muted">
-          Continuous, automated evaluation for AI agents.
-        </p>
-      </div>
+      <AnimatePresence mode="wait">
+        {state === "signin" && (
+          <motion.div
+            key="signin"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Sign in to Histeeria
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                Don&apos;t have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setState("signup");
+                    setError(null);
+                    setInfo(null);
+                  }}
+                  className="font-medium text-[#10b981] hover:underline"
+                >
+                  Get started &rarr;
+                </button>
+              </p>
+            </div>
 
-      {error ? (
-        <div className="w-full rounded-lg border border-danger/40 bg-danger-soft px-4 py-3 text-center text-xs text-danger">
-          Sign in failed. Please try again.
-        </div>
-      ) : null}
-
-      <div className="w-full space-y-2.5">
-        <Button
-          type="button"
-          variant="secondary"
-          size="lg"
-          className="group relative w-full justify-center border-border bg-[#0d121c] text-foreground hover:bg-[#131b26] transition-all"
-          disabled={!!loadingProvider}
-          onClick={() => handleSignIn("google")}
-        >
-          <span className="flex items-center gap-2.5">
-            {loadingProvider === "google" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-transparent" />
-            ) : (
-              <GoogleIcon />
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
             )}
-            <span className="font-medium text-[14px]">
-              {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
-            </span>
-          </span>
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          size="lg"
-          className="group relative w-full justify-center border-border bg-[#0d121c] text-foreground hover:bg-[#131b26] transition-all"
-          disabled={!!loadingProvider}
-          onClick={() => handleSignIn("github")}
-        >
-          <span className="flex items-center gap-2.5">
-            {loadingProvider === "github" ? (
-              <span className="h-4 w-4 animate-spin rounded-full border-2 border-muted border-t-transparent" />
-            ) : (
-              <GitHubIcon />
+            {info && (
+              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
+                {info}
+              </div>
             )}
-            <span className="font-medium text-[14px]">
-              {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
-            </span>
-          </span>
-        </Button>
-      </div>
 
-      <div className="w-full pt-2">
-        <p className="text-center text-[11px] leading-relaxed text-muted/70">
+            <div className="grid gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
+                disabled={Boolean(loadingProvider)}
+                onClick={() => void handleSocialSignIn("google")}
+              >
+                <span className="flex items-center gap-2">
+                  {loadingProvider === "google" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  <span className="text-[13px] font-medium">
+                    {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
+                  </span>
+                </span>
+              </Button>
+              <Button
+                type="button"
+                variant="secondary"
+                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
+                disabled={Boolean(loadingProvider)}
+                onClick={() => void handleSocialSignIn("github")}
+              >
+                <span className="flex items-center gap-2">
+                  {loadingProvider === "github" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <GitHubIcon />
+                  )}
+                  <span className="text-[13px] font-medium">
+                    {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
+                  </span>
+                </span>
+              </Button>
+            </div>
+
+            <div className="relative flex py-2 items-center justify-center">
+              <div className="flex-grow border-t border-[#27272a]" />
+              <span className="flex-shrink mx-4 text-[11px] font-mono uppercase tracking-widest text-[#52525b]">or</span>
+              <div className="flex-grow border-t border-[#27272a]" />
+            </div>
+
+            <form onSubmit={(e) => void handleEmailSignIn(e)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@email.com"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between">
+                  <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your password</label>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      setState("forgot");
+                      setError(null);
+                      setInfo(null);
+                    }}
+                    className="text-[11px] font-medium text-[#10b981] hover:underline"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525b] hover:text-[#a1a1aa]"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
+              </Button>
+            </form>
+          </motion.div>
+        )}
+
+        {state === "signup" && (
+          <motion.div
+            key="signup"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Get Started with Histeeria
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                Already have an account?{" "}
+                <button
+                  type="button"
+                  onClick={() => {
+                    setState("signin");
+                    setError(null);
+                    setInfo(null);
+                  }}
+                  className="font-medium text-[#10b981] hover:underline"
+                >
+                  Sign in &rarr;
+                </button>
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
+            )}
+
+            <div className="grid gap-2">
+              <Button
+                type="button"
+                variant="secondary"
+                className="group relative w-full justify-center border border-[#27272a] bg-[#0a0a0a] text-[#ededed] hover:bg-[#141414] hover:text-[#fafafa] transition-all rounded-[10px] py-2"
+                disabled={Boolean(loadingProvider)}
+                onClick={() => void handleSocialSignIn("google")}
+              >
+                <span className="flex items-center gap-2">
+                  {loadingProvider === "google" ? (
+                    <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                  ) : (
+                    <GoogleIcon />
+                  )}
+                  <span className="text-[13px] font-medium">
+                    Continue with Google
+                  </span>
+                </span>
+              </Button>
+            </div>
+
+            <div className="relative flex py-2 items-center justify-center">
+              <div className="flex-grow border-t border-[#27272a]" />
+              <span className="flex-shrink mx-4 text-[11px] font-mono uppercase tracking-widest text-[#52525b]">or</span>
+              <div className="flex-grow border-t border-[#27272a]" />
+            </div>
+
+            <form onSubmit={(e) => void handleSendOTP(e)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@email.com"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Continue"}
+              </Button>
+            </form>
+          </motion.div>
+        )}
+
+        {state === "otp" && (
+          <motion.div
+            key="otp"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Verify your email
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                We sent a 6-digit code to <span className="text-[#ededed] font-medium">{email}</span>.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
+                {info}
+              </div>
+            )}
+
+            <form onSubmit={(e) => void handleVerifyOTP(e)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter 6-digit code</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  required
+                  disabled={loading}
+                  className="w-full text-center tracking-[0.25em] font-mono text-lg rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Verify Code"}
+              </Button>
+            </form>
+
+            <div className="flex items-center justify-between pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setState("signup");
+                  setError(null);
+                  setInfo(null);
+                }}
+                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+              >
+                &larr; Back
+              </button>
+              <button
+                type="button"
+                onClick={(e) => void handleSendOTP(e)}
+                className="text-[11px] font-medium text-[#10b981] hover:underline"
+              >
+                Resend code
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {state === "register" && (
+          <motion.div
+            key="register"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Complete your profile
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                Set your name and password to get started.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={(e) => void handleCompleteRegistration(e)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your full name</label>
+                <input
+                  type="text"
+                  value={fullName}
+                  onChange={(e) => setFullName(e.target.value)}
+                  placeholder="John Doe"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Profile Photo URL (optional)</label>
+                <input
+                  type="url"
+                  value={avatarUrl}
+                  onChange={(e) => setAvatarUrl(e.target.value)}
+                  placeholder="https://example.com/photo.jpg"
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525b] hover:text-[#a1a1aa]"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
+              </Button>
+            </form>
+          </motion.div>
+        )}
+
+        {state === "forgot" && (
+          <motion.div
+            key="forgot"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Reset your password
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                Enter your email address and we&apos;ll send you a 6-digit code.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
+            )}
+
+            <form onSubmit={(e) => void handleSendOTP(e, true)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter your email</label>
+                <input
+                  type="email"
+                  value={email}
+                  onChange={(e) => setEmail(e.target.value)}
+                  placeholder="name@email.com"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Send Reset Code"}
+              </Button>
+            </form>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setState("signin");
+                  setError(null);
+                  setInfo(null);
+                }}
+                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+              >
+                &larr; Back to sign in
+              </button>
+            </div>
+          </motion.div>
+        )}
+
+        {state === "reset" && (
+          <motion.div
+            key="reset"
+            initial={{ opacity: 0, y: 15 }}
+            animate={{ opacity: 1, y: 0 }}
+            exit={{ opacity: 0, y: -15 }}
+            transition={{ duration: 0.2 }}
+            className="w-full space-y-5"
+          >
+            <div className="space-y-1 text-center">
+              <h1 className="text-xl font-semibold tracking-tight text-[#fafafa]">
+                Reset your password
+              </h1>
+              <p className="text-[12px] text-[#71717a]">
+                Enter the verification code and set your new password.
+              </p>
+            </div>
+
+            {error && (
+              <div className="rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-400">
+                {error}
+              </div>
+            )}
+            {info && (
+              <div className="rounded-[10px] border border-emerald-900/40 bg-emerald-950/20 px-3 py-2 text-center text-[12px] text-emerald-400">
+                {info}
+              </div>
+            )}
+
+            <form onSubmit={(e) => void handleResetPassword(e)} className="space-y-4">
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Enter 6-digit code</label>
+                <input
+                  type="text"
+                  maxLength={6}
+                  value={otp}
+                  onChange={(e) => setOtp(e.target.value.replace(/\D/g, ""))}
+                  placeholder="123456"
+                  required
+                  disabled={loading}
+                  className="w-full text-center tracking-[0.25em] font-mono text-lg rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">New Password</label>
+                <div className="relative">
+                  <input
+                    type={showPassword ? "text" : "password"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    placeholder="••••••••"
+                    required
+                    disabled={loading}
+                    className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 pr-10 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute right-3 top-1/2 -translate-y-1/2 text-[#52525b] hover:text-[#a1a1aa]"
+                  >
+                    {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                  </button>
+                </div>
+              </div>
+
+              <div className="space-y-1.5">
+                <label className="text-[12px] font-medium text-[#a1a1aa]">Confirm Password</label>
+                <input
+                  type="password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  placeholder="••••••••"
+                  required
+                  disabled={loading}
+                  className="w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#141414]"
+                />
+              </div>
+
+              <Button
+                type="submit"
+                disabled={loading || otp.length !== 6}
+                className="w-full justify-center rounded-[10px] bg-[#10b981] hover:bg-[#059669] text-[#fafafa] font-medium text-[13px] py-2 transition-all mt-2"
+              >
+                {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Reset Password"}
+              </Button>
+            </form>
+
+            <div className="text-center pt-2">
+              <button
+                type="button"
+                onClick={() => {
+                  setState("signin");
+                  setError(null);
+                  setInfo(null);
+                }}
+                className="text-[11px] font-medium text-[#71717a] hover:text-[#fafafa]"
+              >
+                &larr; Back to sign in
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="w-full pt-6">
+        <p className="text-center text-[11px] leading-relaxed text-[#52525b]">
           By signing in, you agree to our{" "}
           <a
             href="https://histeeria.com/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-muted hover:text-foreground underline underline-offset-2 transition-colors"
+            className="font-medium text-[#71717a] hover:text-[#fafafa] underline underline-offset-2 transition-colors"
           >
             Terms of Service
           </a>{" "}
@@ -138,7 +844,7 @@ export function LoginForm() {
             href="https://histeeria.com/privacy"
             target="_blank"
             rel="noopener noreferrer"
-            className="font-medium text-muted hover:text-foreground underline underline-offset-2 transition-colors"
+            className="font-medium text-[#71717a] hover:text-[#fafafa] underline underline-offset-2 transition-colors"
           >
             Privacy Policy
           </a>

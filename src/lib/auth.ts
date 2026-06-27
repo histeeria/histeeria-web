@@ -1,8 +1,11 @@
 import type { NextAuthOptions } from "next-auth";
 import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
+import CredentialsProvider from "next-auth/providers/credentials";
 
 import { syncUser } from "@/lib/api";
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
 
 export const authOptions: NextAuthOptions = {
   providers: [
@@ -13,6 +16,69 @@ export const authOptions: NextAuthOptions = {
     GitHubProvider({
       clientId: process.env.GITHUB_CLIENT_ID ?? "",
       clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
+    }),
+    CredentialsProvider({
+      name: "Credentials",
+      credentials: {
+        email: { label: "Email", type: "email" },
+        password: { label: "Password", type: "password" },
+        isRegister: { type: "text" },
+        fullName: { type: "text" },
+        avatarUrl: { type: "text" },
+        code: { type: "text" },
+      },
+      async authorize(credentials) {
+        if (!credentials?.email) return null;
+
+        try {
+          if (credentials.isRegister === "true") {
+            const res = await fetch(`${API_URL}/v1/auth/register`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: credentials.email,
+                code: credentials.code,
+                password: credentials.password,
+                full_name: credentials.fullName,
+                avatar_url: credentials.avatarUrl || null,
+              }),
+            });
+            if (!res.ok) {
+              const err = (await res.json()) as { detail?: string };
+              throw new Error(err.detail || "Registration failed");
+            }
+            const user = (await res.json()) as { id: string; email: string; full_name: string | null; avatar_url: string | null };
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.full_name ?? undefined,
+              image: user.avatar_url ?? undefined,
+            };
+          } else {
+            const res = await fetch(`${API_URL}/v1/auth/login`, {
+              method: "POST",
+              headers: { "Content-Type": "application/json" },
+              body: JSON.stringify({
+                email: credentials.email,
+                password: credentials.password,
+              }),
+            });
+            if (!res.ok) {
+              const err = (await res.json()) as { detail?: string };
+              throw new Error(err.detail || "Invalid email or password");
+            }
+            const user = (await res.json()) as { id: string; email: string; full_name: string | null; avatar_url: string | null };
+            return {
+              id: user.id,
+              email: user.email,
+              name: user.full_name ?? undefined,
+              image: user.avatar_url ?? undefined,
+            };
+          }
+        } catch (error) {
+          throw new Error(error instanceof Error ? error.message : "Authentication failed");
+        }
+      },
     }),
   ],
   session: {
