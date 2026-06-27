@@ -17,6 +17,21 @@ export function useProfileTheme() {
   return useContext(ProfileThemeContext);
 }
 
+export function ProfileThemeProvider({
+  children,
+  theme,
+}: {
+  children: React.ReactNode;
+  theme: ProfileTheme;
+}) {
+  const isLight = theme === "light";
+  return (
+    <ProfileThemeContext.Provider value={{ theme, toggle: () => {}, isLight }}>
+      {children}
+    </ProfileThemeContext.Provider>
+  );
+}
+
 export function PublicProfileThemeProvider({
   children,
   slug,

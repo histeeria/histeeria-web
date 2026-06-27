@@ -459,6 +459,11 @@ export async function listReports(token: string, agentId?: string) {
   return apiFetch<{ reports: ReportSummary[] }>(`/v1/evaluation/reports${params}`, { token });
 }
 
+export async function generateReport(token: string, agentId?: string) {
+  const params = agentId ? `?agent_id=${encodeURIComponent(agentId)}` : "";
+  return apiFetch<ReportSummary>(`/v1/evaluation/report${params}`, { method: "POST", token });
+}
+
 export async function getReport(token: string, reportId: string) {
   return apiFetch<ReportDetail>(`/v1/evaluation/reports/${reportId}`, { token });
 }
@@ -692,6 +697,21 @@ export type PublicAgentProfile = {
   updated_at: string;
   dashboard: AgentProfileDashboard;
 };
+
+export async function getAgentProfileDashboard(
+  token: string,
+  profileId: string,
+  options?: { days?: number; subAgentId?: string },
+) {
+  const params = new URLSearchParams();
+  if (options?.days) params.set("days", String(options.days));
+  if (options?.subAgentId) params.set("sub_agent_id", options.subAgentId);
+  const query = params.toString();
+  return apiFetch<AgentProfileDashboard>(
+    `/v1/agent-profiles/${profileId}/dashboard${query ? `?${query}` : ""}`,
+    { token },
+  );
+}
 
 export async function getAgentProfileDetail(token: string, id: string) {
   return apiFetch<AgentProfileDetailResponse>(`/v1/agent-profiles/${id}`, { token });

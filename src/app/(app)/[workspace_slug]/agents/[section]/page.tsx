@@ -1,10 +1,18 @@
 import { notFound } from "next/navigation";
 
+import { AgentAnalytics } from "@/components/agents/agent-analytics";
 import { AgentMonitoring } from "@/components/agents/agent-monitoring";
 import { AgentProfilesManager } from "@/components/agents/agent-profiles-manager";
 import { ApiKeysManager } from "@/components/agents/api-keys-manager";
 import { SectionPlaceholder } from "@/components/dashboard/section-placeholder";
-import { getDecision, getDecisionAgents, getDecisions, listAgentProfiles, listApiKeys } from "@/lib/api";
+import {
+  getAgentProfileDashboard,
+  getDecision,
+  getDecisionAgents,
+  getDecisions,
+  listAgentProfiles,
+  listApiKeys,
+} from "@/lib/api";
 import { AGENT_SECTIONS, SECTION_LABELS } from "@/lib/navigation";
 import { getCurrentUserProfile, getSessionToken, requireSession } from "@/lib/server";
 
@@ -123,6 +131,43 @@ export default async function AgentSectionPage({ params, searchParams }: PagePro
         initialProfiles={initialProfiles}
         initialOpenCreate={resolvedSearch.new === "1"}
         initialEditId={resolvedSearch.edit ?? null}
+      />
+    );
+  }
+
+  if (section === "analytics") {
+    const token = await getSessionToken();
+    let initialProfiles: Awaited<ReturnType<typeof listAgentProfiles>>["profiles"] = [];
+    let initialAgents: Awaited<ReturnType<typeof getDecisionAgents>>["agents"] = [];
+    let initialDashboard: Awaited<ReturnType<typeof getAgentProfileDashboard>> | null = null;
+
+    if (token) {
+      try {
+        const [profilesData, agentsData] = await Promise.all([
+          listAgentProfiles(token),
+          getDecisionAgents(token),
+        ]);
+        initialProfiles = profilesData.profiles;
+        initialAgents = agentsData.agents;
+        const profileId = initialProfiles[0]?.id;
+        if (profileId) {
+          initialDashboard = await getAgentProfileDashboard(token, profileId, { days: 90 });
+        }
+      } catch {
+        initialProfiles = [];
+        initialAgents = [];
+        initialDashboard = null;
+      }
+    }
+
+    return (
+      <AgentAnalytics
+        profile={profile}
+        workspaceSlug={resolved.workspace_slug}
+        initialProfiles={initialProfiles}
+        initialAgents={initialAgents}
+        initialDashboard={initialDashboard}
+        initialProfileId={initialProfiles[0]?.id ?? null}
       />
     );
   }
