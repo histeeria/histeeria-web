@@ -27,8 +27,8 @@ const initialForm: FormState = {
 };
 
 const fieldClass =
-  "w-full rounded-[10px] border border-[#27272a] bg-[#141414] px-3.5 py-2.5 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#3f3f46] focus:bg-[#181818]";
-const labelClass = "block text-[13px] font-medium text-[#a1a1aa] select-none";
+  "w-full rounded-[10px] border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#4f5ea3] focus:bg-[#101524]";
+const labelClass = "block text-[12px] font-medium text-[#a1a1aa] select-none";
 
 export function OnboardingFlow() {
   const router = useRouter();
@@ -230,9 +230,11 @@ export function OnboardingFlow() {
   }
 
   return (
-    <div className="flex min-h-screen flex-col bg-black md:flex-row">
+    <div className="relative flex min-h-screen flex-col overflow-hidden bg-[#020202] md:flex-row">
+      <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_78%_8%,rgba(236,168,214,0.16),transparent_28%),radial-gradient(circle_at_24%_14%,rgba(143,156,255,0.16),transparent_30%),linear-gradient(180deg,#020202_0%,#050505_45%,#020202_100%)]" />
+      <div className="pointer-events-none absolute inset-0 opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)] [background-size:44px_44px]" />
       {/* Left: form */}
-      <div className="flex flex-1 flex-col justify-between px-6 py-10 sm:px-12 md:px-16 lg:px-20">
+      <div className="relative z-10 flex flex-1 flex-col justify-between px-6 py-8 sm:px-12 md:px-14 lg:px-20">
         <div className="flex items-center gap-2.5">
           <Image
             src="/logo-dark.png"
@@ -244,8 +246,9 @@ export function OnboardingFlow() {
           <span className="text-[13px] font-medium text-[#71717a] select-none">Histeeria</span>
         </div>
 
-        <div className="mx-auto my-auto w-full max-w-[380px] py-8">
-          <AnimatePresence mode="wait">
+        <div className="mx-auto my-auto w-full max-w-[450px] py-4">
+          <div className="rounded-[24px] border border-white/10 bg-[#070707]/86 p-6 shadow-[0_35px_120px_rgba(0,0,0,0.72)] backdrop-blur-2xl md:p-7">
+            <AnimatePresence mode="wait">
             <motion.div
               key={step}
               initial={{ opacity: 0, y: 8 }}
@@ -257,7 +260,7 @@ export function OnboardingFlow() {
               {step === 1 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
+                    <h1 className="text-[26px] font-medium tracking-[-0.035em] text-[#fafafa] select-none">
                       Create your workspace
                     </h1>
                     <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
@@ -287,8 +290,8 @@ export function OnboardingFlow() {
                       <label htmlFor="workspace_slug" className={labelClass}>
                         Workspace slug
                       </label>
-                      <div className="flex overflow-hidden rounded-[10px] border border-[#27272a] bg-[#141414] focus-within:border-[#3f3f46]">
-                        <span className="flex items-center border-r border-[#27272a] bg-[#0f0f0f] px-3 py-2.5 text-xs font-mono text-[#52525b] select-none">
+                      <div className="flex overflow-hidden rounded-[10px] border border-white/10 bg-white/[0.035] focus-within:border-[#4f5ea3]">
+                        <span className="flex items-center border-r border-white/10 bg-[#0f0f0f] px-3 py-2.5 text-xs font-mono text-[#52525b] select-none">
                           app.histeeria.com/
                         </span>
                         <input
@@ -336,7 +339,7 @@ export function OnboardingFlow() {
                 <div className="space-y-6">
                   <div className="space-y-1.5">
                     <div className="flex items-center justify-between gap-3">
-                      <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
+                      <h1 className="text-[26px] font-medium tracking-[-0.035em] text-[#fafafa] select-none">
                         Invite teammates
                       </h1>
                       <button
@@ -372,7 +375,7 @@ export function OnboardingFlow() {
               {step === 3 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
+                    <h1 className="text-[26px] font-medium tracking-[-0.035em] text-[#fafafa] select-none">
                       Configure your first agent
                     </h1>
                     <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
@@ -412,11 +415,11 @@ export function OnboardingFlow() {
                           !form.domain_name ? "text-[#52525b]" : "text-[#ededed]",
                         )}
                       >
-                        <option value="" disabled>
+                        <option value="" disabled className="bg-[#0a0a0a]">
                           Select a domain...
                         </option>
                         {DOMAINS.map((domain) => (
-                          <option key={domain.value} value={domain.value}>
+                          <option key={domain.value} value={domain.value} className="bg-[#0a0a0a]">
                             {domain.label}
                           </option>
                         ))}
@@ -449,7 +452,7 @@ export function OnboardingFlow() {
               {step === 4 ? (
                 <div className="space-y-6">
                   <div className="space-y-1.5">
-                    <h1 className="text-[22px] font-medium tracking-tight text-[#fafafa] select-none">
+                    <h1 className="text-[26px] font-medium tracking-[-0.035em] text-[#fafafa] select-none">
                       Set up your profile
                     </h1>
                     <p className="text-[13px] leading-relaxed text-[#71717a] select-none">
@@ -506,15 +509,15 @@ export function OnboardingFlow() {
                 </div>
               ) : null}
             </motion.div>
-          </AnimatePresence>
+            </AnimatePresence>
 
-          {submitError ? (
-            <div className="mt-5 rounded-[10px] border border-[#3f3f46] bg-[#141414] px-4 py-3 text-xs text-[#f87171] text-center">
+            {submitError ? (
+            <div className="mt-5 rounded-[10px] border border-red-900/30 bg-red-950/20 px-4 py-3 text-xs text-[#f87171] text-center">
               {submitError}
             </div>
           ) : null}
 
-          <div className="mt-8 flex items-center justify-end gap-4">
+            <div className="mt-8 flex items-center justify-end gap-4">
             {step === 2 ? (
               <button
                 type="button"
@@ -535,11 +538,11 @@ export function OnboardingFlow() {
               </button>
             ) : null}
 
-            <button
+              <button
               type="button"
               onClick={handleNext}
               disabled={submitting || checkingSlug}
-              className="rounded-full bg-[#27272a] px-5 py-2 text-[13px] font-medium text-[#fafafa] transition hover:bg-[#3f3f46] disabled:opacity-60 cursor-pointer"
+              className="cursor-pointer rounded-full border border-[#49558d] bg-[#20284a] px-5 py-2 text-[13px] font-medium text-[#eef0ff] transition hover:border-[#5b68a5] hover:bg-[#28325a] disabled:opacity-60"
             >
               {submitting || checkingSlug ? (
                 <span className="flex items-center gap-2">
@@ -549,7 +552,8 @@ export function OnboardingFlow() {
               ) : (
                 primaryLabel
               )}
-            </button>
+              </button>
+            </div>
           </div>
         </div>
 
@@ -568,21 +572,21 @@ export function OnboardingFlow() {
       </div>
 
       {/* Right: ambient panel */}
-      <div className="relative hidden flex-1 overflow-hidden border-l border-[#181818] bg-black md:flex md:items-center md:justify-center">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(255,255,255,0.04)_0%,transparent_55%)]" />
-        <div className="relative z-10 flex flex-col items-center space-y-5 opacity-70">
-          <div className="flex h-20 w-20 items-center justify-center rounded-full border border-[#27272a] bg-[#0a0a0a]">
-            <Image
-              src="/logo-dark.png"
-              alt="Histeeria"
-              width={44}
-              height={44}
-              priority
-              className="h-11 w-auto object-contain select-none"
-            />
-          </div>
-          <p className="text-[12px] font-medium tracking-wide text-[#52525b] select-none">
-            Infrastructure for machine judgment
+      <div className="relative hidden flex-1 overflow-hidden border-l border-white/10 bg-black md:flex md:items-center md:justify-center">
+        <div className="absolute inset-0">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img src="/images/shield.png" alt="Onboarding visual" className="h-full w-full object-cover opacity-80" />
+        </div>
+        <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(2,2,2,0.82)_0%,rgba(2,2,2,0.48)_45%,rgba(2,2,2,0.82)_100%)]" />
+        <div className="relative z-10 max-w-[420px] px-8">
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Onboarding</p>
+          <h2 className="mt-3 text-[56px] font-medium leading-[0.9] tracking-[-0.05em] text-white">
+            Build trust
+            <br />
+            from day one.
+          </h2>
+          <p className="mt-5 text-[15px] leading-[1.85] text-white/68">
+            Set up your workspace, connect your first agent, and start monitoring decisions with evidence-backed judgment.
           </p>
         </div>
       </div>

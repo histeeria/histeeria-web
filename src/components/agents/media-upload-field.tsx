@@ -22,6 +22,7 @@ interface MediaUploadFieldProps {
   previewClassName?: string;
   allowUrl?: boolean;
   layout?: "card" | "compact";
+  registrationAuth?: { email: string; code: string };
 }
 
 function validateFile(file: File, variant: "image" | "video") {
@@ -42,10 +43,18 @@ function validateFile(file: File, variant: "image" | "video") {
   }
 }
 
-export async function uploadMediaFile(file: File, purpose: MediaUploadFieldProps["purpose"]) {
+export async function uploadMediaFile(
+  file: File,
+  purpose: MediaUploadFieldProps["purpose"],
+  registrationAuth?: MediaUploadFieldProps["registrationAuth"],
+) {
   const formData = new FormData();
   formData.append("purpose", purpose);
   formData.append("file", file);
+  if (registrationAuth?.email && registrationAuth?.code) {
+    formData.append("email", registrationAuth.email);
+    formData.append("code", registrationAuth.code);
+  }
 
   const res = await fetch("/api/media/upload", {
     method: "POST",
@@ -132,6 +141,7 @@ export function MediaUploadField({
   previewClassName,
   allowUrl = true,
   layout = "card",
+  registrationAuth,
 }: MediaUploadFieldProps) {
   const inputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -154,7 +164,7 @@ export function MediaUploadField({
 
     setUploading(true);
     try {
-      const url = await uploadMediaFile(file, purpose);
+      const url = await uploadMediaFile(file, purpose, registrationAuth);
       onChange(url);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Upload failed");
@@ -238,12 +248,14 @@ export function MediaUploadField({
 
   if (layout === "compact") {
     return (
-      <div className="space-y-4">
-        <MediaPreview value={value} variant={variant} className={cn("mx-auto h-44 w-44", previewClassName)} />
-        <div>
-          <p className="text-[14px] font-medium text-[#fafafa]">{label}</p>
-          <p className="mt-1 text-[12px] text-[#71717a]">{hint}</p>
-          <p className="mt-1 text-[11px] text-[#52525b]">{sizeHint}</p>
+      <div className="space-y-3 rounded-[12px] border border-[#27272a] bg-[#0c0c0c] p-4">
+        <div className="flex items-center gap-3">
+          <MediaPreview value={value} variant={variant} className={cn("h-[72px] w-[72px] shrink-0 rounded-full", previewClassName)} />
+          <div className="min-w-0">
+            <p className="text-[13px] font-medium text-[#fafafa]">{label}</p>
+            <p className="mt-0.5 text-[11px] text-[#71717a]">{hint}</p>
+            <p className="mt-0.5 text-[10px] text-[#52525b]">{sizeHint}</p>
+          </div>
         </div>
         {uploadControls}
       </div>

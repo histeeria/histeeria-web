@@ -46,16 +46,16 @@ function GoogleIcon() {
 
 type AuthState = "signin" | "signup" | "otp" | "register" | "forgot" | "reset";
 
-const titleClass = "text-[24px] font-semibold tracking-tight text-[#fafafa]";
-const subtitleClass = "text-[13px] leading-relaxed text-[#a1a1aa]";
+const titleClass = "text-[22px] font-semibold tracking-tight text-[#fafafa]";
+const subtitleClass = "text-[12px] leading-relaxed text-[#9ea0aa]";
 const linkClass = "font-medium text-[#9aa8ff] transition-colors hover:text-[#c7ceff] hover:underline";
 const labelClass = "text-[12px] font-medium text-[#a1a1aa]";
 const inputClass =
-  "w-full rounded-[10px] border border-[#27272a] bg-[#0a0a0a] px-3.5 py-2.5 text-[14px] text-[#ededed] placeholder:text-[#52525b] outline-none transition-colors focus:border-[#4f5ea3] focus:bg-[#101524] disabled:cursor-not-allowed disabled:opacity-70";
+  "w-full rounded-[10px] border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-[14px] text-[#ededed] placeholder:text-[#52525b] outline-none transition-colors focus:border-[#4f5ea3] focus:bg-[#101524] disabled:cursor-not-allowed disabled:opacity-70";
 const socialButtonClass =
-  "group relative w-full cursor-pointer justify-center rounded-[10px] border border-[#27272a] bg-[#0a0a0a] text-[#ededed] shadow-none transition-colors hover:border-[#3f3f46] hover:bg-[#141414] hover:text-[#fafafa] disabled:cursor-not-allowed";
+  "group relative w-full cursor-pointer justify-center rounded-[10px] border border-white/10 bg-white/[0.03] text-[#ededed] shadow-none transition-colors hover:border-white/25 hover:bg-white/[0.06] hover:text-[#fafafa] disabled:cursor-not-allowed";
 const primaryButtonClass =
-  "w-full cursor-pointer justify-center rounded-[10px] border border-[#363f6a] bg-[#1a1f39] text-[#eef0ff] font-medium text-[13px] shadow-none transition-colors hover:border-[#49558d] hover:bg-[#20284a] disabled:cursor-not-allowed disabled:opacity-60";
+  "w-full cursor-pointer justify-center rounded-[10px] border border-[#49558d] bg-[#20284a] text-[#eef0ff] font-medium text-[13px] shadow-none transition-colors hover:border-[#5b68a5] hover:bg-[#28325a] disabled:cursor-not-allowed disabled:opacity-60";
 const infoClass = "rounded-[10px] border border-[#2a3261] bg-[#151b33] px-3 py-2 text-center text-[12px] text-[#c7ceff]";
 const errorClass = "rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-300";
 
@@ -79,7 +79,7 @@ export function LoginForm() {
   const [info, setInfo] = useState<string | null>(null);
   const isBusy = loading || Boolean(loadingProvider);
 
-  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+  const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.histeeria.com";
 
   function clearMessages() {
     setError(null);
@@ -304,14 +304,14 @@ export function LoginForm() {
 
   return (
     <div className="flex flex-col items-center">
-      <div className="mb-6 flex items-center justify-center">
+      <div className="mb-5 flex items-center justify-center">
         <Image
           src="/logo-dark.png"
           alt="Histeeria Logo"
           width={46}
           height={46}
           priority
-          className="h-11 w-auto object-contain"
+          className="h-10 w-auto object-contain"
         />
       </div>
 
@@ -323,7 +323,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Sign in to Histeeria</h1>
@@ -418,7 +418,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Get started with Histeeria</h1>
@@ -475,7 +475,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Verify your email</h1>
@@ -536,7 +536,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Complete your profile</h1>
@@ -547,7 +547,7 @@ export function LoginForm() {
 
             {error && <div className={errorClass}>{error}</div>}
 
-            <form onSubmit={(e) => void handleCompleteRegistration(e)} className="space-y-4">
+            <form onSubmit={(e) => void handleCompleteRegistration(e)} className="space-y-3">
               <div className="space-y-1.5">
                 <label className={labelClass}>Enter your full name</label>
                 <input
@@ -565,16 +565,18 @@ export function LoginForm() {
                 <MediaUploadField
                   layout="compact"
                   label="Profile Photo (optional)"
-                  hint="Select jpeg, jpg, png only (max 2MB)"
+                  hint="JPG/JPEG/PNG only, max 2 MB"
                   purpose="owner_avatar"
                   value={avatarUrl}
                   onChange={setAvatarUrl}
                   variant="image"
-                  allowUrl={true}
-                  previewClassName="h-32 w-32 object-cover rounded-full"
+                  allowUrl={false}
+                  registrationAuth={{ email, code: otp }}
+                  previewClassName="h-[72px] w-[72px] object-cover rounded-full"
                 />
               </div>
 
+              <div className="grid gap-3 md:grid-cols-2">
               <div className="space-y-1.5">
                 <label className={labelClass}>Password</label>
                 <div className="relative">
@@ -609,6 +611,7 @@ export function LoginForm() {
                   className={inputClass}
                 />
               </div>
+              </div>
 
               <Button type="submit" variant="secondary" disabled={loading} className={primaryButtonClass}>
                 {loading ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : "Create Account"}
@@ -624,7 +627,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Reset your password</h1>
@@ -676,7 +679,7 @@ export function LoginForm() {
             animate={{ opacity: 1, y: 0 }}
             exit={{ opacity: 0, y: -15 }}
             transition={{ duration: 0.2 }}
-            className="w-full space-y-5"
+            className="w-full space-y-4"
           >
             <div className="space-y-1.5 text-center">
               <h1 className={titleClass}>Reset your password</h1>
