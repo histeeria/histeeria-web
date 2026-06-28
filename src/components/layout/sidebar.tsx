@@ -37,7 +37,7 @@ export function Sidebar({
   onToggleCollapse,
   onNavigate,
 }: SidebarProps) {
-  const { data: session } = useSession();
+  const { data: session, update: updateSession } = useSession();
   const pathname = usePathname();
   const [unreadCount, setUnreadCount] = useState(0);
   const navigation = buildNavigation(workspaceSlug ?? "dashboard", unreadCount);
@@ -60,6 +60,32 @@ export function Sidebar({
     document.addEventListener("mousedown", onClickOutside);
     return () => document.removeEventListener("mousedown", onClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!session?.user?.email || session.user.image) return;
+
+    let cancelled = false;
+
+    async function hydrateAvatar() {
+      try {
+        const res = await fetch("/api/auth/me");
+        if (!res.ok || cancelled) return;
+
+        const data = (await res.json()) as { user?: { avatar_url?: string | null } };
+        const avatarUrl = data.user?.avatar_url;
+        if (avatarUrl) {
+          await updateSession({ image: avatarUrl });
+        }
+      } catch {
+        // Non-blocking: sidebar falls back to initials.
+      }
+    }
+
+    void hydrateAvatar();
+    return () => {
+      cancelled = true;
+    };
+  }, [session?.user?.email, session?.user?.image, updateSession]);
 
   useEffect(() => {
     async function loadUnread() {

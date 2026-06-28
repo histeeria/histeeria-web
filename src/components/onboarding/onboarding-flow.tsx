@@ -98,7 +98,7 @@ export function OnboardingFlow() {
     const timeout = window.setTimeout(() => {
       router.push(`/${completionSlug}/dashboard`);
       router.refresh();
-    }, 4800);
+    }, 2000);
 
     return () => window.clearTimeout(timeout);
   }, [completionSlug, router]);
@@ -293,32 +293,26 @@ export function OnboardingFlow() {
 
   if (apiKey || completionSlug) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4">
-        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(143,156,255,0.12),transparent_36%)]" />
-        <div className="relative z-10 flex flex-col items-center justify-center text-center">
-          {!videoFailed ? (
-            <video
-              src="/logo-mov.mp4"
-              autoPlay
-              muted
-              playsInline
-              className="h-40 w-40 object-contain opacity-0 animate-[fade-up_0.6s_ease-out_forwards]"
-              onError={() => setVideoFailed(true)}
-            />
-          ) : (
-            <Image
-              src="/logo-dark.png"
-              alt="Histeeria"
-              width={130}
-              height={130}
-              className="h-32 w-auto object-contain opacity-0 animate-[fade-up_0.6s_ease-out_forwards]"
-              priority
-            />
-          )}
-          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/45">
-            Opening your dashboard
-          </p>
-        </div>
+      <div className="flex min-h-screen items-center justify-center bg-[#000000]">
+        {!videoFailed ? (
+          <video
+            src="/logo-mov.mp4"
+            autoPlay
+            muted
+            playsInline
+            className="h-40 w-40 object-contain"
+            onError={() => setVideoFailed(true)}
+          />
+        ) : (
+          <Image
+            src="/logo-dark.png"
+            alt=""
+            width={130}
+            height={130}
+            className="h-32 w-auto object-contain"
+            priority
+          />
+        )}
       </div>
     );
   }

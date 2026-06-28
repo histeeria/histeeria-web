@@ -93,7 +93,7 @@ export const authOptions: NextAuthOptions = {
     async signIn({ user }) {
       return Boolean(user.email);
     },
-    async jwt({ token, user }) {
+    async jwt({ token, user, trigger, session }) {
       if (user?.email) {
         token.email = user.email;
         token.name = user.name ?? undefined;
@@ -105,6 +105,13 @@ export const authOptions: NextAuthOptions = {
           // Non-blocking: user sync retries on /me during onboarding.
         }
       }
+
+      if (trigger === "update" && session) {
+        const nextSession = session as { name?: string; image?: string };
+        if (nextSession.name) token.name = nextSession.name;
+        if (nextSession.image) token.picture = nextSession.image;
+      }
+
       return token;
     },
     async session({ session, token }) {

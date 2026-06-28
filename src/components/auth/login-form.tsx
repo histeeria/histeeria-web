@@ -1,7 +1,7 @@
 "use client";
 
 import Image from "next/image";
-import { signIn } from "next-auth/react";
+import { signIn, useSession } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
@@ -61,6 +61,7 @@ const errorClass = "rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 p
 
 export function LoginForm() {
   const searchParams = useSearchParams();
+  const { update: updateSession } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/onboarding";
   const initialError = searchParams.get("error");
 
@@ -119,11 +120,17 @@ export function LoginForm() {
 
     const publicUrl = await uploadMediaFile(avatarFile, "owner_avatar");
     setAvatarUrl(publicUrl);
-    await fetch("/api/auth/profile/avatar", {
+
+    const patchRes = await fetch("/api/auth/profile/avatar", {
       method: "PATCH",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({ avatar_url: publicUrl }),
     });
+    if (!patchRes.ok) {
+      throw new Error("Failed to save profile photo.");
+    }
+
+    await updateSession({ image: publicUrl });
   }
 
   async function handleSocialSignIn(provider: "google" | "github") {
