@@ -60,13 +60,13 @@ function MatrixRow({
 }) {
   const t = publicTheme(isLight);
   return (
-    <section className={cn("grid border-b md:grid-cols-[280px_minmax(0,1fr)]", t.border)}>
-      <div className={cn("border-b px-6 py-10 md:border-b-0 md:border-r", t.border)}>
+    <section className={cn("grid overflow-hidden rounded-[32px] border bg-[var(--pp-surface)] shadow-[0_30px_120px_rgba(0,0,0,0.22)] backdrop-blur-xl md:grid-cols-[310px_minmax(0,1fr)]", t.border)}>
+      <div className={cn("border-b bg-[var(--pp-surface-alt)] px-6 py-10 md:border-b-0 md:border-r lg:px-8", t.border)}>
         <p className={cn("font-mono text-[12px] tracking-[0.2em]", t.faint)}>{index}</p>
-        <h2 className={cn("mt-4 text-[24px] md:text-[26px] font-medium tracking-[-0.03em] leading-tight", t.fg)}>{title}</h2>
-        <p className={cn("mt-3 text-[15px] md:text-[16px] leading-relaxed", t.muted)}>{subtitle}</p>
+        <h2 className={cn("mt-4 text-[28px] font-medium leading-[1.05] tracking-[-0.04em] md:text-[32px]", t.fg)}>{title}</h2>
+        <p className={cn("mt-4 text-[15px] leading-relaxed md:text-[16px]", t.muted)}>{subtitle}</p>
       </div>
-      <div className="px-6 py-10">{children}</div>
+      <div className="px-6 py-10 lg:px-10">{children}</div>
     </section>
   );
 }
@@ -86,7 +86,7 @@ function FieldBlock({
   return (
     <div className="mb-8 last:mb-0">
       <p className={cn("font-mono text-[11px] md:text-[12px] uppercase tracking-[0.16em]", t.faint)}>{label}</p>
-      <div className={cn("mt-3 text-[16px] md:text-[17px] leading-[1.7]", mono ? "font-mono text-[14px] md:text-[15px] leading-relaxed" : "", t.fg)}>
+      <div className={cn("mt-3 text-[16px] leading-[1.75] md:text-[17px]", mono ? "font-mono text-[14px] leading-relaxed md:text-[15px]" : "", t.fg)}>
         {children}
       </div>
     </div>
@@ -99,8 +99,8 @@ function DashList({ items, isLight }: { items: string[]; isLight: boolean }) {
   return (
     <ul className="space-y-3">
       {items.map((item) => (
-        <li key={item} className={cn("flex gap-3 text-[16px] md:text-[17px] leading-relaxed", t.fg)}>
-          <span className={cn("mt-[0.6rem] h-px w-3.5 shrink-0", isLight ? "bg-[#18181b]" : "bg-[#fafafa]")} />
+        <li key={item} className={cn("flex gap-3 text-[16px] leading-relaxed md:text-[17px]", t.fg)}>
+          <span className={cn("mt-[0.68rem] h-px w-4 shrink-0", isLight ? "bg-[#18181b]" : "bg-[#8f9cff]")} />
           <span>{item}</span>
         </li>
       ))}
@@ -117,7 +117,7 @@ function TagGrid({ tags, isLight }: { tags: string[]; isLight: boolean }) {
         <span
           key={tag}
           className={cn(
-            "border px-4 py-2 font-mono text-[12px] md:text-[13px] tracking-wide transition-all duration-200 cursor-default hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)] hover:border-[var(--pp-fg)]",
+            "cursor-default rounded-full border px-4 py-2 font-mono text-[12px] tracking-wide transition-all duration-200 hover:border-[var(--pp-fg)] hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)] md:text-[13px]",
             t.border,
             t.surface,
             t.muted,
@@ -168,7 +168,7 @@ function PublicDemoVideo({ url, isLight }: { url: string; isLight: boolean }) {
 
   if (!embed) {
     return (
-      <div className={cn("flex aspect-video items-center justify-center border", t.border, t.surfaceAlt)}>
+      <div className={cn("flex aspect-video items-center justify-center rounded-[28px] border", t.border, t.surfaceAlt)}>
         <p className={cn("font-mono text-[12px]", t.muted)}>Invalid video URL</p>
       </div>
     );
@@ -176,14 +176,14 @@ function PublicDemoVideo({ url, isLight }: { url: string; isLight: boolean }) {
 
   if (isDirectVideo(url)) {
     return (
-      <video controls loop muted playsInline className={cn("aspect-video w-full border bg-black object-cover", t.border)}>
+      <video controls loop muted playsInline className={cn("aspect-video w-full rounded-[28px] border bg-black object-cover", t.border)}>
         <source src={url} />
       </video>
     );
   }
 
   return (
-    <div className={cn("aspect-video overflow-hidden border bg-black", t.border)}>
+    <div className={cn("aspect-video overflow-hidden rounded-[28px] border bg-black", t.border)}>
       <iframe src={embed} title="Agent demo" className="h-full w-full" allowFullScreen />
     </div>
   );
@@ -252,12 +252,24 @@ export function PublicAgentProfile({
   const escalations = parseHeuristics(ctx.behavior.escalation_conditions);
 
   return (
-    <article className={cn("font-sans", t.fg)}>
+    <article className={cn("relative isolate overflow-hidden rounded-[36px] border font-sans shadow-[0_40px_160px_rgba(0,0,0,0.45)]", t.border, t.fg)}>
+      <div
+        className={cn(
+          "pointer-events-none absolute inset-0 -z-10",
+          profileThemeClass(
+            isLight,
+            "bg-[radial-gradient(circle_at_78%_8%,rgba(236,168,214,0.22),transparent_30%),radial-gradient(circle_at_24%_14%,rgba(143,156,255,0.14),transparent_28%),linear-gradient(180deg,#020202_0%,#050505_45%,#020202_100%)]",
+            "bg-[radial-gradient(circle_at_78%_8%,rgba(143,156,255,0.18),transparent_30%),radial-gradient(circle_at_24%_14%,rgba(236,168,214,0.16),transparent_28%),linear-gradient(180deg,#ffffff_0%,#fafafa_48%,#f4f4f5_100%)]",
+          ),
+        )}
+      />
+      <div className={cn("pointer-events-none absolute inset-0 -z-10 [background-size:160px_160px]", profileThemeClass(isLight, "opacity-[0.12] [background-image:linear-gradient(rgba(255,255,255,.12)_1px,transparent_1px),linear-gradient(90deg,rgba(255,255,255,.12)_1px,transparent_1px)]", "opacity-[0.55] [background-image:linear-gradient(rgba(0,0,0,.06)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,.06)_1px,transparent_1px)]"))} />
       {/* HERO */}
       {showSummary ? (
-        <section className={cn("border-b", t.border)}>
-          <div className="grid lg:grid-cols-[1.2fr_0.8fr]">
-            <div className="border-b px-6 py-12 lg:border-b-0 lg:border-r lg:px-10 lg:py-16">
+        <section className={cn("relative overflow-hidden border-b", t.border)}>
+          <div className="pointer-events-none absolute right-0 top-0 h-[520px] w-[58%] bg-[radial-gradient(ellipse_at_center,rgba(236,168,214,0.18),transparent_60%)] blur-2xl" />
+          <div className="grid lg:grid-cols-[1.08fr_0.92fr]">
+            <div className="relative z-10 border-b px-6 py-14 lg:border-b-0 lg:border-r lg:px-12 lg:py-20">
               <div className="min-w-0">
                   <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
                     <span className={cn("font-mono text-[12px] tracking-wide", t.muted)}>
@@ -273,23 +285,23 @@ export function PublicAgentProfile({
                     ) : null}
                   </div>
 
-                  <h1 className={cn("mt-5 text-[clamp(2.75rem,6vw,4.5rem)] font-medium leading-[1.02] tracking-[-0.04em]", t.fg)}>
+                  <h1 className={cn("mt-6 max-w-4xl text-[clamp(3.5rem,8vw,7.75rem)] font-medium leading-[0.92] tracking-[-0.065em]", t.fg)}>
                     {profile.name}
                   </h1>
 
-                  <p className={cn("mt-6 max-w-2xl text-[20px] md:text-[22px] font-normal leading-normal tracking-[-0.015em]", t.fg)}>
+                  <p className={cn("mt-7 max-w-2xl text-[20px] font-normal leading-normal tracking-[-0.02em] md:text-[24px]", t.fg)}>
                     {tagline}
                   </p>
 
-                  <p className={cn("mt-5 max-w-3xl text-[16px] md:text-[18px] leading-[1.75]", t.muted)}>{description}</p>
+                  <p className={cn("mt-5 max-w-3xl text-[16px] leading-[1.8] md:text-[18px]", t.muted)}>{description}</p>
 
-                  <div className={cn("mt-10 grid grid-cols-3 border", t.border)}>
+                  <div className={cn("mt-10 grid overflow-hidden rounded-[28px] border bg-[var(--pp-surface)] backdrop-blur-xl sm:grid-cols-3", t.border)}>
                     {[
                       { label: "Type", value: domainLabel },
                       { label: "Environment", value: environment },
                       { label: "Trust layer", value: trustLayer },
                     ].map((item) => (
-                      <div key={item.label} className={cn("border-r px-4 py-4 last:border-r-0", t.border)}>
+                      <div key={item.label} className={cn("border-b px-4 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0", t.border)}>
                         <p className={cn("font-mono text-[10px] uppercase tracking-[0.18em]", t.faint)}>
                           {item.label}
                         </p>
@@ -309,7 +321,7 @@ export function PublicAgentProfile({
                           target="_blank"
                           rel="noopener noreferrer"
                           className={cn(
-                            "border px-4 py-2 font-mono text-[12px] tracking-wide transition-all duration-200 hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)] hover:border-[var(--pp-fg)] shadow-sm cursor-pointer",
+                            "cursor-pointer rounded-full border px-4 py-2 font-mono text-[12px] tracking-wide shadow-sm transition-all duration-200 hover:border-[var(--pp-fg)] hover:bg-[var(--pp-fg)] hover:text-[var(--pp-bg)]",
                             t.border,
                             t.muted,
                           )}
@@ -326,7 +338,7 @@ export function PublicAgentProfile({
               </div>
             </div>
 
-            <div className="px-6 py-12 lg:px-8 lg:py-16">
+            <div className="relative z-10 px-6 py-12 lg:px-8 lg:py-20">
               <AbstractAgentVisual
                 name={profile.name}
                 avatarUrl={profile.agent_avatar_url}
@@ -339,17 +351,17 @@ export function PublicAgentProfile({
 
       {/* JUDGMENT STRIP */}
       {dashboard.has_sdk_agent && showSummary ? (
-        <div className="border-b">
+        <div className={cn("border-b px-4 py-4 md:px-6", t.border)}>
           <JudgmentGradeStrip judgement={sections.judgement} show={Boolean(sections.judgement)} />
         </div>
       ) : null}
 
       {/* DEMO & TELEMETRY */}
       {(showDemo || (dashboard.has_sdk_agent && showGraph)) ? (
-        <section className={cn("grid border-b lg:grid-cols-2", t.border)}>
-          <div className={cn("border-b lg:border-b-0 lg:border-r", t.border)}>
+        <section className={cn("grid gap-4 border-b p-4 md:p-6 lg:grid-cols-2", t.border)}>
+          <div className={cn("overflow-hidden rounded-[32px] border bg-[var(--pp-surface)] backdrop-blur-xl", t.border)}>
             {showDemo && profile.demo_video_url ? (
-              <div className="p-6 lg:p-8">
+              <div className="p-5 lg:p-6">
                 <p className={cn("mb-4 font-mono text-[10px] uppercase tracking-[0.16em]", t.faint)}>
                   Execution walkthrough
                 </p>
@@ -377,7 +389,7 @@ export function PublicAgentProfile({
 
       {/* CORE DATA MATRIX */}
       {(showWho || showKnows || showBehaves) ? (
-        <section className={cn("border-b", t.border)}>
+        <section className={cn("space-y-4 border-b p-4 md:space-y-6 md:p-6", t.border)}>
           {showWho ? (
             <MatrixRow
               index="01"
@@ -481,16 +493,18 @@ export function PublicAgentProfile({
 
       {/* BUILDER */}
       {showOwner ? (
-        <section className={cn("border-b px-6 py-12 md:px-10", t.border)}>
+        <section className={cn("border-b p-4 md:p-6", t.border)}>
+          <div className={cn("rounded-[32px] border bg-[var(--pp-surface)] px-6 py-10 backdrop-blur-xl md:px-10", t.border)}>
           <p className={cn("mb-8 font-mono text-[10px] uppercase tracking-[0.16em]", t.faint)}>
             Human builder
           </p>
           <OwnerProfileSection owner={profile.owner_profile} />
+          </div>
         </section>
       ) : null}
 
       {/* FOOTER */}
-      <footer className={cn("px-6 py-10 text-center md:px-10", t.muted)}>
+      <footer className={cn("px-6 py-12 text-center md:px-10", t.muted)}>
         <p className="font-mono text-[11px] tracking-wide">
           © {new Date().getFullYear()} {profile.name}
           {workspaceSlug ? ` · /p/${workspaceSlug}/${profile.slug}` : ""}

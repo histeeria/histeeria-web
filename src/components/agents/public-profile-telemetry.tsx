@@ -46,10 +46,10 @@ function SignalBars({
           ? Array.from({ length: 24 }).map((_, i) => (
               <div
                 key={i}
-                className="flex-1"
+                className="flex-1 rounded-full"
                 style={{
                   height: `${12 + (i % 5) * 4}px`,
-                  backgroundColor: i === 11 ? t.fill : t.fillMuted,
+                  backgroundColor: i === 11 ? "#8f9cff" : t.fillMuted,
                   opacity: i === 11 ? 1 : 0.55,
                 }}
               />
@@ -59,10 +59,10 @@ function SignalBars({
               return (
                 <div
                   key={item.label}
-                  className="flex-1"
+                  className="flex-1 rounded-full"
                   style={{
                     height: `${h}px`,
-                    backgroundColor: i === 0 ? t.fill : t.fillMuted,
+                    backgroundColor: i === 0 ? "#8f9cff" : t.fillMuted,
                   }}
                   title={item.label}
                 />
@@ -124,9 +124,9 @@ function AlignmentLine({ points, isLight }: { points: GraphPoint[]; isLight: boo
             strokeWidth={1}
           />
         ))}
-        <path d={path} fill="none" stroke={t.fill} strokeWidth={1.5} />
+        <path d={path} fill="none" stroke="#8f9cff" strokeWidth={1.8} />
         {coords.map((c, i) => (
-          <circle key={i} cx={c.x} cy={c.y} r={i === coords.length - 1 ? 3 : 0} fill={t.fill} />
+          <circle key={i} cx={c.x} cy={c.y} r={i === coords.length - 1 ? 3 : 0} fill="#8f9cff" />
         ))}
       </svg>
     </div>
@@ -154,7 +154,7 @@ export function TelemetryPanel({
     flags.slice(0, 24).map((f) => ({ label: f.label, value: f.count, max: Math.max(...flags.map((x) => x.count), 1) }));
 
   return (
-    <div className={cn("grid h-full min-h-[280px] grid-rows-2 border-l", t.border)}>
+    <div className={cn("grid h-full min-h-[280px] grid-rows-2 overflow-hidden rounded-[32px] border bg-[var(--pp-surface)] backdrop-blur-xl", t.border)}>
       <div className={cn("border-b", t.border)}>
         <SignalBars items={barItems} isLight={isLight} />
       </div>
@@ -177,16 +177,16 @@ export function JudgmentGradeStrip({
   const t = publicTheme(isLight);
 
   return (
-    <div className={cn("grid grid-cols-4 border", t.border, t.surface)}>
+    <div className={cn("grid overflow-hidden rounded-[28px] border bg-[var(--pp-surface)] backdrop-blur-xl sm:grid-cols-4", t.border)}>
       {[
         { label: "Grade", value: judgement.grade },
         { label: "Overall", value: judgement.overall?.toFixed(1) ?? "—" },
         { label: "Evaluated", value: String(judgement.evaluated_count) },
         { label: "Streak", value: String(judgement.current_streak) },
       ].map((item) => (
-        <div key={item.label} className={cn("border-r px-5 py-4 last:border-r-0", t.border)}>
+        <div key={item.label} className={cn("border-b px-5 py-4 last:border-b-0 sm:border-b-0 sm:border-r sm:last:border-r-0", t.border)}>
           <MetricLabel isLight={isLight}>{item.label}</MetricLabel>
-          <p className={cn("mt-2 font-mono text-[22px] leading-none tracking-tight", t.fg)}>{item.value}</p>
+          <p className={cn("mt-2 font-mono text-[24px] leading-none tracking-tight", t.fg)}>{item.value}</p>
         </div>
       ))}
     </div>
@@ -198,7 +198,8 @@ export function AbstractAgentVisual({ name, avatarUrl, isLight }: { name: string
 
   if (avatarUrl) {
     return (
-      <div className={cn("relative aspect-square w-full border", t.border, t.surfaceAlt)}>
+      <div className={cn("relative aspect-square w-full overflow-hidden rounded-[36px] border bg-black shadow-[0_24px_120px_rgba(143,156,255,0.16)]", t.border)}>
+        <div className="pointer-events-none absolute inset-0 z-10 bg-[radial-gradient(circle_at_50%_35%,transparent_36%,rgba(0,0,0,0.24)_68%,rgba(0,0,0,0.72)_100%)]" />
         {/* eslint-disable-next-line @next/next/no-img-element */}
         <img src={avatarUrl} alt={name} className="h-full w-full object-cover" />
       </div>
@@ -206,29 +207,43 @@ export function AbstractAgentVisual({ name, avatarUrl, isLight }: { name: string
   }
 
   return (
-    <div className={cn("relative aspect-square w-full border", t.border, t.surfaceAlt)}>
+    <div className={cn("relative aspect-square w-full overflow-hidden rounded-[36px] border bg-[#020202] shadow-[0_24px_120px_rgba(236,168,214,0.13)]", t.border)}>
       <svg viewBox="0 0 400 400" className="h-full w-full" aria-hidden>
-        <rect width="400" height="400" fill={isLight ? "#f4f4f5" : "#141414"} />
-        {[100, 200, 300].map((y) => (
-          <line key={`h-${y}`} x1="40" y1={y} x2="360" y2={y} stroke={t.grid} strokeWidth="1" />
+        <defs>
+          <radialGradient id="agentGlow" cx="50%" cy="45%" r="60%">
+            <stop offset="0%" stopColor="#eca8d6" stopOpacity="0.75" />
+            <stop offset="42%" stopColor="#8f9cff" stopOpacity="0.35" />
+            <stop offset="100%" stopColor="#020202" stopOpacity="0" />
+          </radialGradient>
+          <filter id="softBlur">
+            <feGaussianBlur stdDeviation="1.2" />
+          </filter>
+        </defs>
+        <rect width="400" height="400" fill={isLight ? "#f8f8fa" : "#020202"} />
+        <circle cx="205" cy="190" r="150" fill="url(#agentGlow)" opacity={isLight ? 0.25 : 0.5} />
+        {[64, 128, 192, 256, 320].map((x) => (
+          <line key={`v-${x}`} x1={x} y1="0" x2={x} y2="400" stroke={t.grid} strokeWidth="1" />
         ))}
-        {[100, 200, 300].map((x) => (
-          <line key={`v-${x}`} x1={x} y1="40" x2={x} y2="360" stroke={t.grid} strokeWidth="1" />
+        {[64, 128, 192, 256, 320].map((y) => (
+          <line key={`h-${y}`} x1="0" y1={y} x2="400" y2={y} stroke={t.grid} strokeWidth="1" />
         ))}
-        <circle cx="200" cy="200" r="72" fill="none" stroke={t.fill} strokeWidth="1.5" />
-        <circle cx="200" cy="200" r="4" fill={t.fill} />
-        {[
-          [120, 140],
-          [280, 160],
-          [240, 280],
-        ].map(([cx, cy], i) => (
-          <g key={i}>
-            <line x1="200" y1="200" x2={cx} y2={cy} stroke={t.fillMuted} strokeWidth="1" strokeDasharray="4 4" />
-            <circle cx={cx} cy={cy} r="5" fill={t.fill} />
-          </g>
-        ))}
+        {Array.from({ length: 42 }).map((_, i) => {
+          const angle = (i / 42) * Math.PI * 2;
+          const radius = 58 + (i % 7) * 10;
+          const x = 202 + Math.cos(angle) * radius;
+          const y = 210 + Math.sin(angle) * radius * 0.72;
+          return (
+            <g key={i} opacity={0.25 + (i % 5) * 0.12}>
+              <line x1="202" y1="210" x2={x} y2={y} stroke={i % 3 === 0 ? "#eca8d6" : "#8f9cff"} strokeWidth="0.8" />
+              <circle cx={x} cy={y} r={i % 4 === 0 ? 3 : 1.8} fill={i % 3 === 0 ? "#eca8d6" : "#8f9cff"} filter="url(#softBlur)" />
+            </g>
+          );
+        })}
+        <circle cx="202" cy="210" r="42" fill="none" stroke="#ffffff" strokeOpacity="0.55" strokeWidth="1.2" />
+        <circle cx="202" cy="210" r="5" fill="#ffffff" />
       </svg>
-      <div className="absolute bottom-0 left-0 border-t border-r px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest">
+      <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/80 to-transparent" />
+      <div className="absolute bottom-4 left-4 rounded-full border border-white/10 bg-black/30 px-3 py-1.5 font-mono text-[10px] uppercase tracking-widest backdrop-blur-xl">
         <span className={t.muted}>Generative ID</span>
       </div>
     </div>

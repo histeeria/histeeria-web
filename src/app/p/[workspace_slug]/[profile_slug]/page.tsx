@@ -82,7 +82,7 @@ export default async function PublicAgentProfilePage({ params }: PageProps) {
         workspaceSlug={profile.workspace_slug}
       />
 
-      <main className="mx-auto max-w-[1200px]">
+      <main className="mx-auto max-w-[1360px] px-4 pb-10 pt-8 md:px-6">
         <AgentProfileLanding
           profile={{
             ...profile,

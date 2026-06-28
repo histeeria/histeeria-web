@@ -40,7 +40,7 @@ export function PublicProfileThemeProvider({
   slug: string;
 }) {
   const storageKey = `histeeria.profile.theme.${slug}`;
-  const [theme, setTheme] = useState<ProfileTheme>("light");
+  const [theme, setTheme] = useState<ProfileTheme>("dark");
 
   useEffect(() => {
     const stored = localStorage.getItem(storageKey) as ProfileTheme | null;
@@ -63,17 +63,17 @@ export function PublicProfileThemeProvider({
         data-theme={theme}
         style={
           {
-            "--pp-bg": isLight ? "#fafafa" : "#09090b",
+            "--pp-bg": isLight ? "#fafafa" : "#020202",
             "--pp-fg": isLight ? "#18181b" : "#fafafa",
-            "--pp-muted": isLight ? "#3f3f46" : "#e4e4e7",
-            "--pp-border": isLight ? "#e4e4e7" : "#27272a",
-            "--pp-surface": isLight ? "#ffffff" : "#0a0a0a",
-            "--pp-surface-alt": isLight ? "#f4f4f5" : "#141414",
+            "--pp-muted": isLight ? "#3f3f46" : "#a8a8b3",
+            "--pp-border": isLight ? "#e4e4e7" : "rgba(255,255,255,0.1)",
+            "--pp-surface": isLight ? "#ffffff" : "rgba(10,10,10,0.76)",
+            "--pp-surface-alt": isLight ? "#f4f4f5" : "rgba(255,255,255,0.045)",
           } as React.CSSProperties
         }
         className={cn(
           "min-h-screen font-sans transition-colors duration-300",
-          isLight ? "bg-[#fafafa] text-[#18181b]" : "bg-[#09090b] text-[#fafafa]",
+          isLight ? "bg-[#fafafa] text-[#18181b]" : "bg-[#020202] text-[#fafafa]",
         )}
       >
         {children}
@@ -89,10 +89,10 @@ export function ProfileThemeToggle({ className }: { className?: string }) {
       type="button"
       onClick={toggle}
       className={cn(
-        "inline-flex cursor-pointer items-center gap-1.5 border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition",
+        "inline-flex cursor-pointer items-center gap-1.5 rounded-full border px-3 py-1.5 font-mono text-[10px] uppercase tracking-[0.12em] transition",
         isLight
           ? "border-[#e4e4e7] bg-white text-[#52525b] hover:bg-[#f4f4f5]"
-          : "border-[#27272a] bg-[#141414] text-[#a1a1aa] hover:text-[#fafafa]",
+          : "border-white/10 bg-white/[0.04] text-white/60 hover:border-white/25 hover:text-white",
         className,
       )}
       aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
