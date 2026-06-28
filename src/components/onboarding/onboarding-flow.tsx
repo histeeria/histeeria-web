@@ -10,7 +10,18 @@ import { Link2, Check } from "lucide-react";
 import { checkWorkspaceSlug, completeOnboarding, DOMAINS, type OnboardingPayload } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
-type FormState = OnboardingPayload;
+type FormState = {
+  workspace_name: string;
+  workspace_slug: string;
+  team_size: string;
+  team_members: string;
+  agent_name: string;
+  domain_name: string;
+  agent_description: string;
+  full_name: string;
+  role: string;
+  heard_from: string;
+};
 
 const initialForm: FormState = {
   workspace_name: "",
@@ -126,23 +137,25 @@ export function OnboardingFlow() {
     }
 
     if (currentStep === 3) {
+      const agentName = form.agent_name.trim();
+      const agentDescription = form.agent_description.trim();
       const hasAnyAgentField =
-        Boolean(form.agent_name.trim()) ||
+        Boolean(agentName) ||
         Boolean(form.domain_name) ||
-        Boolean(form.agent_description.trim());
+        Boolean(agentDescription);
 
       if (!hasAnyAgentField) {
         setErrors(nextErrors);
         return true;
       }
 
-      if (form.agent_name.trim().length < 2) {
+      if (agentName.length < 2) {
         nextErrors.agent_name = "Agent name must be at least 2 characters.";
       }
       if (!form.domain_name) {
         nextErrors.domain_name = "Select a domain for your agent.";
       }
-      if (form.agent_description.trim().length < 10) {
+      if (agentDescription.length < 10) {
         nextErrors.agent_description = "Describe your agent in at least 10 characters.";
       }
     }
