@@ -4,10 +4,9 @@ import { AnimatePresence, motion } from "framer-motion";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
 import { useSession } from "next-auth/react";
-import { useMemo, useRef, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Link2, Check } from "lucide-react";
 
-import { ApiKeyReveal } from "@/components/onboarding/api-key-reveal";
 import { checkWorkspaceSlug, completeOnboarding, DOMAINS, type OnboardingPayload } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
@@ -30,6 +29,30 @@ const fieldClass =
   "w-full rounded-[10px] border border-white/10 bg-white/[0.035] px-3.5 py-2.5 text-sm text-[#ededed] placeholder:text-[#52525b] outline-none transition focus:border-[#4f5ea3] focus:bg-[#101524]";
 const labelClass = "block text-[12px] font-medium text-[#a1a1aa] select-none";
 
+const onboardingSlides = [
+  {
+    image: "/images/shield.png",
+    label: "Onboarding",
+    title: "Build trust\nfrom day one.",
+    description:
+      "Set up your workspace, connect your first agent, and start monitoring decisions with evidence-backed judgment.",
+  },
+  {
+    image: "/images/bridge.png",
+    label: "Evaluation",
+    title: "Connect.\nEvaluate.\nImprove.",
+    description:
+      "Bring traces, outputs, and tool calls into one command center for continuous judgment monitoring.",
+  },
+  {
+    image: "/images/audit.jpg",
+    label: "Audit trail",
+    title: "Every decision\nvisible.",
+    description:
+      "Create a clear record of what your agent saw, decided, and changed before mistakes reach users.",
+  },
+];
+
 export function OnboardingFlow() {
   const router = useRouter();
   const { data: session, update } = useSession();
@@ -41,12 +64,33 @@ export function OnboardingFlow() {
   const [apiKey, setApiKey] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
   const [copiedLink, setCopiedLink] = useState(false);
+  const [slideIndex, setSlideIndex] = useState(0);
+  const [completionSlug, setCompletionSlug] = useState<string | null>(null);
+  const [videoFailed, setVideoFailed] = useState(false);
   const slugManuallyEdited = useRef(false);
 
   const workspacePlaceholder = useMemo(() => {
     const firstName = session?.user?.name?.split(" ")[0] ?? "My";
     return `${firstName}'s Workspace`;
   }, [session?.user?.name]);
+
+  useEffect(() => {
+    const interval = window.setInterval(() => {
+      setSlideIndex((current) => (current + 1) % onboardingSlides.length);
+    }, 4500);
+    return () => window.clearInterval(interval);
+  }, []);
+
+  useEffect(() => {
+    if (!completionSlug) return;
+
+    const timeout = window.setTimeout(() => {
+      router.push(`/${completionSlug}/dashboard`);
+      router.refresh();
+    }, 4800);
+
+    return () => window.clearTimeout(timeout);
+  }, [completionSlug, router]);
 
   function slugify(text: string) {
     return text
@@ -82,6 +126,16 @@ export function OnboardingFlow() {
     }
 
     if (currentStep === 3) {
+      const hasAnyAgentField =
+        Boolean(form.agent_name.trim()) ||
+        Boolean(form.domain_name) ||
+        Boolean(form.agent_description.trim());
+
+      if (!hasAnyAgentField) {
+        setErrors(nextErrors);
+        return true;
+      }
+
       if (form.agent_name.trim().length < 2) {
         nextErrors.agent_name = "Agent name must be at least 2 characters.";
       }
@@ -169,9 +223,9 @@ export function OnboardingFlow() {
         workspace_slug: form.workspace_slug.trim() || slugify(form.workspace_name || workspacePlaceholder),
         team_size: form.team_size,
         team_members: form.team_members?.trim() || undefined,
-        agent_name: form.agent_name.trim(),
-        domain_name: form.domain_name,
-        agent_description: form.agent_description.trim(),
+        agent_name: form.agent_name.trim() || undefined,
+        domain_name: form.domain_name || undefined,
+        agent_description: form.agent_description.trim() || undefined,
         full_name: (form.full_name || session?.user?.name || "").trim(),
         role: form.role?.trim() || undefined,
         heard_from: form.heard_from?.trim() || undefined,
@@ -180,6 +234,7 @@ export function OnboardingFlow() {
       const result = await completeOnboarding(token, payload);
       setApiKey(result.api_key);
       await update();
+      setCompletionSlug(payload.workspace_slug);
     } catch (error) {
       setSubmitError(error instanceof Error ? error.message : "Something went wrong");
     } finally {
@@ -191,10 +246,21 @@ export function OnboardingFlow() {
     setStep(3);
   }
 
+  function handleSkipAgentSetup() {
+    setForm((current) => ({
+      ...current,
+      agent_name: "",
+      domain_name: "",
+      agent_description: "",
+    }));
+    setErrors({});
+    setStep(4);
+  }
+
   async function handleCopyInviteLink() {
     const inviteSlug = form.workspace_slug || slugify(form.workspace_name || workspacePlaceholder);
     const domain = typeof window !== "undefined" ? window.location.origin : "https://app.histeeria.com";
-    const inviteLink = `${domain}/join/${inviteSlug}`;
+    const inviteLink = `${domain}/login?workspace=${inviteSlug}`;
     try {
       await navigator.clipboard.writeText(inviteLink);
       setCopiedLink(true);
@@ -212,18 +278,33 @@ export function OnboardingFlow() {
     return "Continue";
   }, [checkingSlug, form.team_members, step, submitting]);
 
-  if (apiKey) {
-    const finalSlug = form.workspace_slug || slugify(form.workspace_name || workspacePlaceholder);
+  if (apiKey || completionSlug) {
     return (
-      <div className="relative flex min-h-screen items-center justify-center bg-black px-4">
-        <div className="relative z-10 w-full max-w-[440px] rounded-2xl border border-[#27272a] bg-[#0a0a0a] p-8">
-          <ApiKeyReveal
-            apiKey={apiKey}
-            onContinue={() => {
-              router.push(`/${finalSlug}/dashboard`);
-              router.refresh();
-            }}
-          />
+      <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-black px-4">
+        <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(143,156,255,0.12),transparent_36%)]" />
+        <div className="relative z-10 flex flex-col items-center justify-center text-center">
+          {!videoFailed ? (
+            <video
+              src="/logo-mov.mp4"
+              autoPlay
+              muted
+              playsInline
+              className="h-40 w-40 object-contain opacity-0 animate-[fade-up_0.6s_ease-out_forwards]"
+              onError={() => setVideoFailed(true)}
+            />
+          ) : (
+            <Image
+              src="/logo-dark.png"
+              alt="Histeeria"
+              width={130}
+              height={130}
+              className="h-32 w-auto object-contain opacity-0 animate-[fade-up_0.6s_ease-out_forwards]"
+              priority
+            />
+          )}
+          <p className="mt-5 font-mono text-[11px] uppercase tracking-[0.2em] text-white/45">
+            Opening your dashboard
+          </p>
         </div>
       </div>
     );
@@ -527,6 +608,15 @@ export function OnboardingFlow() {
               >
                 Skip
               </button>
+            ) : step === 3 ? (
+              <button
+                type="button"
+                disabled={submitting || checkingSlug}
+                onClick={handleSkipAgentSetup}
+                className="text-[13px] text-[#71717a] hover:text-[#ededed] transition cursor-pointer disabled:opacity-50"
+              >
+                Skip agent setup
+              </button>
             ) : step > 1 ? (
               <button
                 type="button"
@@ -575,18 +665,26 @@ export function OnboardingFlow() {
       <div className="relative hidden flex-1 overflow-hidden border-l border-white/10 bg-black md:flex md:items-center md:justify-center">
         <div className="absolute inset-0">
           {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src="/images/shield.png" alt="Onboarding visual" className="h-full w-full object-cover opacity-80" />
+          <img
+            src={onboardingSlides[slideIndex].image}
+            alt="Onboarding visual"
+            className="h-full w-full object-cover opacity-80 transition-opacity duration-700"
+          />
         </div>
         <div className="pointer-events-none absolute inset-0 bg-[linear-gradient(130deg,rgba(2,2,2,0.82)_0%,rgba(2,2,2,0.48)_45%,rgba(2,2,2,0.82)_100%)]" />
         <div className="relative z-10 max-w-[420px] px-8">
-          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">Onboarding</p>
+          <p className="font-mono text-[11px] uppercase tracking-[0.2em] text-white/50">
+            {onboardingSlides[slideIndex].label}
+          </p>
           <h2 className="mt-3 text-[56px] font-medium leading-[0.9] tracking-[-0.05em] text-white">
-            Build trust
-            <br />
-            from day one.
+            {onboardingSlides[slideIndex].title.split("\n").map((line) => (
+              <span key={line} className="block">
+                {line}
+              </span>
+            ))}
           </h2>
           <p className="mt-5 text-[15px] leading-[1.85] text-white/68">
-            Set up your workspace, connect your first agent, and start monitoring decisions with evidence-backed judgment.
+            {onboardingSlides[slideIndex].description}
           </p>
         </div>
       </div>

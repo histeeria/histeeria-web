@@ -1,4 +1,4 @@
-const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "http://localhost:8000";
+const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.histeeria.com";
 
 export type MeResponse = {
   user: {
@@ -32,9 +32,9 @@ export type OnboardingPayload = {
   workspace_slug: string;
   team_size?: string;
   team_members?: string;
-  agent_name: string;
-  domain_name: string;
-  agent_description: string;
+  agent_name?: string;
+  domain_name?: string;
+  agent_description?: string;
   full_name: string;
   role?: string;
   heard_from?: string;

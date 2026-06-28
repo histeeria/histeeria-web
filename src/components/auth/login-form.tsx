@@ -3,12 +3,12 @@
 import Image from "next/image";
 import { signIn } from "next-auth/react";
 import { useSearchParams } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { Eye, EyeOff, Loader2 } from "lucide-react";
+import { Eye, EyeOff, ImageIcon, Loader2, Trash2, Upload } from "lucide-react";
 
 import { Button } from "@/components/ui/button";
-import { MediaUploadField } from "@/components/agents/media-upload-field";
+import { IMAGE_MAX_BYTES, uploadMediaFile } from "@/components/agents/media-upload-field";
 
 function GitHubIcon() {
   return (
@@ -70,6 +70,8 @@ export function LoginForm() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [fullName, setFullName] = useState("");
   const [avatarUrl, setAvatarUrl] = useState("");
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreviewUrl, setAvatarPreviewUrl] = useState("");
   const [otp, setOtp] = useState("");
   
   const [showPassword, setShowPassword] = useState(false);
@@ -77,6 +79,7 @@ export function LoginForm() {
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(initialError ? "Authentication failed." : null);
   const [info, setInfo] = useState<string | null>(null);
+  const avatarInputRef = useRef<HTMLInputElement>(null);
   const isBusy = loading || Boolean(loadingProvider);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.histeeria.com";
@@ -84,6 +87,43 @@ export function LoginForm() {
   function clearMessages() {
     setError(null);
     setInfo(null);
+  }
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreviewUrl("");
+      return;
+    }
+
+    const objectUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreviewUrl(objectUrl);
+    return () => URL.revokeObjectURL(objectUrl);
+  }, [avatarFile]);
+
+  function handleAvatarFile(file: File | null) {
+    if (!file) return;
+    if (!["image/jpeg", "image/png"].includes(file.type)) {
+      setError("Profile photo must be JPG, JPEG, or PNG.");
+      return;
+    }
+    if (file.size > IMAGE_MAX_BYTES) {
+      setError("Profile photo must be 2 MB or smaller.");
+      return;
+    }
+    clearMessages();
+    setAvatarFile(file);
+  }
+
+  async function uploadSelectedAvatar() {
+    if (!avatarFile) return;
+
+    const publicUrl = await uploadMediaFile(avatarFile, "owner_avatar");
+    setAvatarUrl(publicUrl);
+    await fetch("/api/auth/profile/avatar", {
+      method: "PATCH",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ avatar_url: publicUrl }),
+    });
   }
 
   async function handleSocialSignIn(provider: "google" | "github") {
@@ -199,7 +239,7 @@ export function LoginForm() {
         password,
         code: otp,
         fullName,
-        avatarUrl: avatarUrl || undefined,
+        avatarUrl: undefined,
         isRegister: "true",
         callbackUrl,
         redirect: false,
@@ -209,6 +249,11 @@ export function LoginForm() {
         setError(res.error);
         setLoading(false);
       } else {
+        try {
+          await uploadSelectedAvatar();
+        } catch (avatarError) {
+          setInfo("Account created. Profile photo upload can be retried later in settings.");
+        }
         window.location.href = callbackUrl;
       }
     } catch (err) {
@@ -561,18 +606,53 @@ export function LoginForm() {
                 />
               </div>
 
-              <div className="space-y-1.5">
-                <MediaUploadField
-                  layout="compact"
-                  label="Profile Photo (optional)"
-                  hint="JPG/JPEG/PNG only, max 2 MB"
-                  purpose="owner_avatar"
-                  value={avatarUrl}
-                  onChange={setAvatarUrl}
-                  variant="image"
-                  allowUrl={false}
-                  registrationAuth={{ email, code: otp }}
-                  previewClassName="h-[72px] w-[72px] object-cover rounded-full"
+              <div className="rounded-[12px] border border-white/10 bg-white/[0.035] p-4">
+                <div className="flex items-center gap-3">
+                  <div className="flex h-[72px] w-[72px] shrink-0 items-center justify-center overflow-hidden rounded-full border border-dashed border-white/15 bg-black/20 text-[#52525b]">
+                    {avatarPreviewUrl ? (
+                      // eslint-disable-next-line @next/next/no-img-element
+                      <img src={avatarPreviewUrl} alt="Profile photo preview" className="h-full w-full object-cover" />
+                    ) : (
+                      <div className="flex flex-col items-center gap-1">
+                        <ImageIcon className="h-5 w-5 opacity-70" />
+                        <span className="text-[9px]">No photo</span>
+                      </div>
+                    )}
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <p className="text-[13px] font-medium text-[#fafafa]">Profile Photo (optional)</p>
+                    <p className="mt-0.5 text-[11px] text-[#71717a]">JPG/JPEG/PNG only, max 2 MB</p>
+                    <div className="mt-3 flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        onClick={() => avatarInputRef.current?.click()}
+                        className="inline-flex cursor-pointer items-center gap-1.5 rounded-full bg-[#fafafa] px-3 py-1.5 text-[11px] font-medium text-black transition hover:bg-[#e4e4e7]"
+                      >
+                        <Upload className="h-3.5 w-3.5" />
+                        {avatarFile ? "Change photo" : "Choose photo"}
+                      </button>
+                      {avatarFile ? (
+                        <button
+                          type="button"
+                          onClick={() => {
+                            setAvatarFile(null);
+                            setAvatarUrl("");
+                          }}
+                          className="inline-flex cursor-pointer items-center gap-1.5 rounded-full border border-white/10 px-3 py-1.5 text-[11px] text-[#a1a1aa] transition hover:border-red-400/30 hover:text-red-300"
+                        >
+                          <Trash2 className="h-3.5 w-3.5" />
+                          Remove
+                        </button>
+                      ) : null}
+                    </div>
+                  </div>
+                </div>
+                <input
+                  ref={avatarInputRef}
+                  type="file"
+                  accept="image/jpeg,image/png,.jpg,.jpeg,.png"
+                  className="hidden"
+                  onChange={(event) => handleAvatarFile(event.target.files?.[0] ?? null)}
                 />
               </div>
 
