@@ -240,13 +240,24 @@ export function LoginForm() {
     setLoading(true);
     clearMessages();
     try {
-      // Execute registration via next-auth credentials authorization
+      let avatarPublicUrl: string | undefined;
+      if (avatarFile) {
+        try {
+          avatarPublicUrl = await uploadMediaFile(avatarFile, "owner_avatar", {
+            email,
+            code: otp,
+          });
+        } catch {
+          // Fall back to post-registration upload once the session exists.
+        }
+      }
+
       const res = await signIn("credentials", {
         email,
         password,
         code: otp,
         fullName,
-        avatarUrl: undefined,
+        avatarUrl: avatarPublicUrl,
         isRegister: "true",
         callbackUrl,
         redirect: false,
@@ -257,8 +268,12 @@ export function LoginForm() {
         setLoading(false);
       } else {
         try {
-          await uploadSelectedAvatar();
-        } catch (avatarError) {
+          if (avatarFile && !avatarPublicUrl) {
+            await uploadSelectedAvatar();
+          } else if (avatarPublicUrl) {
+            await updateSession({ image: avatarPublicUrl });
+          }
+        } catch {
           setInfo("Account created. Profile photo upload can be retried later in settings.");
         }
         window.location.href = callbackUrl;

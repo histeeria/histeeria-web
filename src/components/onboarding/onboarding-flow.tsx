@@ -245,7 +245,9 @@ export function OnboardingFlow() {
       };
 
       const result = await completeOnboarding(token, payload);
-      setApiKey(result.api_key);
+      if (result.api_key) {
+        setApiKey(result.api_key);
+      }
       await update();
       setCompletionSlug(payload.workspace_slug);
     } catch (error) {
@@ -291,7 +293,7 @@ export function OnboardingFlow() {
     return "Continue";
   }, [checkingSlug, form.team_members, step, submitting]);
 
-  if (apiKey || completionSlug) {
+  if (completionSlug) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-[#000000]">
         {!videoFailed ? (

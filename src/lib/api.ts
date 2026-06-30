@@ -7,6 +7,7 @@ export type MeResponse = {
     full_name: string | null;
     role: string | null;
     heard_from: string | null;
+    avatar_url: string | null;
     created_at: string;
     onboarded: boolean;
     organization_id: string | null;
@@ -42,8 +43,8 @@ export type OnboardingPayload = {
 
 export type OnboardingResponse = {
   organization_id: string;
-  api_key: string;
-  key_prefix: string;
+  api_key: string | null;
+  key_prefix: string | null;
   message: string;
 };
 

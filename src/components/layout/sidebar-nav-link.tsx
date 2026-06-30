@@ -1,6 +1,5 @@
 "use client";
 
-import Image from "next/image";
 import Link, { useLinkStatus } from "next/link";
 import { Loader2 } from "lucide-react";
 
@@ -98,11 +97,10 @@ export function UserAvatar({ image, name, email, size = "md" }: UserAvatarProps)
 
   if (image) {
     return (
-      <Image
+      // eslint-disable-next-line @next/next/no-img-element
+      <img
         src={image}
         alt={name ?? "User"}
-        width={size === "sm" ? 32 : 36}
-        height={size === "sm" ? 32 : 36}
         className={cn("shrink-0 rounded-md object-cover", dim)}
       />
     );

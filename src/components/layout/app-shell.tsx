@@ -14,9 +14,10 @@ interface AppShellProps {
   children: React.ReactNode;
   workspaceName?: string | null;
   workspaceSlug?: string | null;
+  userAvatar?: string | null;
 }
 
-export function AppShell({ children, workspaceName, workspaceSlug }: AppShellProps) {
+export function AppShell({ children, workspaceName, workspaceSlug, userAvatar }: AppShellProps) {
   const [mobileOpen, setMobileOpen] = useState(false);
   const [collapsed, setCollapsed] = useState(() => {
     if (typeof window === "undefined") return false;
@@ -43,6 +44,7 @@ export function AppShell({ children, workspaceName, workspaceSlug }: AppShellPro
         <Sidebar
           workspaceName={workspaceName}
           workspaceSlug={workspaceSlug}
+          userAvatar={userAvatar}
           collapsed={collapsed}
           onToggleCollapse={toggleCollapse}
         />
@@ -84,6 +86,7 @@ export function AppShell({ children, workspaceName, workspaceSlug }: AppShellPro
               <Sidebar
                 workspaceName={workspaceName}
                 workspaceSlug={workspaceSlug}
+                userAvatar={userAvatar}
                 onNavigate={() => setMobileOpen(false)}
               />
             </div>

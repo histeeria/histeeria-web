@@ -25,6 +25,7 @@ import { cn } from "@/lib/utils";
 interface SidebarProps {
   workspaceName?: string | null;
   workspaceSlug?: string | null;
+  userAvatar?: string | null;
   collapsed?: boolean;
   onToggleCollapse?: () => void;
   onNavigate?: () => void;
@@ -33,6 +34,7 @@ interface SidebarProps {
 export function Sidebar({
   workspaceName,
   workspaceSlug,
+  userAvatar,
   collapsed = false,
   onToggleCollapse,
   onNavigate,
@@ -323,7 +325,7 @@ export function Sidebar({
             )}
           >
             <UserAvatar
-              image={session?.user?.image}
+              image={session?.user?.image ?? userAvatar}
               name={session?.user?.name}
               email={session?.user?.email}
               size="sm"
@@ -356,7 +358,7 @@ export function Sidebar({
               <div className="border-b border-[#27272a] px-3 py-3">
                 <div className="flex items-center gap-2.5">
                   <UserAvatar
-                    image={session?.user?.image}
+                    image={session?.user?.image ?? userAvatar}
                     name={session?.user?.name}
                     email={session?.user?.email}
                   />

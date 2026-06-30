@@ -17,6 +17,7 @@ export default async function AppLayout({ children }: { children: React.ReactNod
       <AppShell
         workspaceName={profile?.organization?.workspace_name}
         workspaceSlug={profile?.organization?.workspace_slug}
+        userAvatar={profile?.user.avatar_url}
       >
         {children}
       </AppShell>
