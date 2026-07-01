@@ -3,20 +3,69 @@ import GitHubProvider from "next-auth/providers/github";
 import GoogleProvider from "next-auth/providers/google";
 import CredentialsProvider from "next-auth/providers/credentials";
 
-import { syncUser } from "@/lib/api";
-
 const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.histeeria.com";
+
+type SyncedUser = {
+  id: string;
+  email: string;
+  full_name: string | null;
+  avatar_url: string | null;
+};
+
+async function syncUserWithApi(
+  email: string,
+  full_name?: string | null,
+  avatar_url?: string | null,
+): Promise<SyncedUser | null> {
+  const res = await fetch(`${API_URL}/v1/auth/sync`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      email: email.toLowerCase().trim(),
+      full_name: full_name ?? null,
+      avatar_url: avatar_url ?? null,
+    }),
+  });
+
+  if (!res.ok) {
+    return null;
+  }
+
+  return (await res.json()) as SyncedUser;
+}
+
+const googleConfigured = Boolean(
+  process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET,
+);
+const githubConfigured = Boolean(
+  process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET,
+);
 
 export const authOptions: NextAuthOptions = {
   providers: [
-    GoogleProvider({
-      clientId: process.env.GOOGLE_CLIENT_ID ?? "",
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET ?? "",
-    }),
-    GitHubProvider({
-      clientId: process.env.GITHUB_CLIENT_ID ?? "",
-      clientSecret: process.env.GITHUB_CLIENT_SECRET ?? "",
-    }),
+    ...(googleConfigured
+      ? [
+          GoogleProvider({
+            clientId: process.env.GOOGLE_CLIENT_ID!,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
+            authorization: {
+              params: {
+                prompt: "consent",
+                access_type: "offline",
+                response_type: "code",
+              },
+            },
+          }),
+        ]
+      : []),
+    ...(githubConfigured
+      ? [
+          GitHubProvider({
+            clientId: process.env.GITHUB_CLIENT_ID!,
+            clientSecret: process.env.GITHUB_CLIENT_SECRET!,
+          }),
+        ]
+      : []),
     CredentialsProvider({
       name: "Credentials",
       credentials: {
@@ -72,27 +121,12 @@ export const authOptions: NextAuthOptions = {
               const err = (await res.json()) as { detail?: string };
               throw new Error(err.detail || "Registration failed");
             }
-            const user = (await res.json()) as { id: string; email: string; full_name: string | null; avatar_url: string | null };
-            return {
-              id: user.id,
-              email: user.email,
-              name: user.full_name ?? undefined,
-              image: user.avatar_url ?? undefined,
+            const user = (await res.json()) as {
+              id: string;
+              email: string;
+              full_name: string | null;
+              avatar_url: string | null;
             };
-          } else {
-            const res = await fetch(`${API_URL}/v1/auth/login`, {
-              method: "POST",
-              headers: { "Content-Type": "application/json" },
-              body: JSON.stringify({
-                email: credentials.email,
-                password: credentials.password,
-              }),
-            });
-            if (!res.ok) {
-              const err = (await res.json()) as { detail?: string };
-              throw new Error(err.detail || "Invalid email or password");
-            }
-            const user = (await res.json()) as { id: string; email: string; full_name: string | null; avatar_url: string | null };
             return {
               id: user.id,
               email: user.email,
@@ -100,6 +134,31 @@ export const authOptions: NextAuthOptions = {
               image: user.avatar_url ?? undefined,
             };
           }
+
+          const res = await fetch(`${API_URL}/v1/auth/login`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({
+              email: credentials.email,
+              password: credentials.password,
+            }),
+          });
+          if (!res.ok) {
+            const err = (await res.json()) as { detail?: string };
+            throw new Error(err.detail || "Invalid email or password");
+          }
+          const user = (await res.json()) as {
+            id: string;
+            email: string;
+            full_name: string | null;
+            avatar_url: string | null;
+          };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.full_name ?? undefined,
+            image: user.avatar_url ?? undefined,
+          };
         } catch (error) {
           throw new Error(error instanceof Error ? error.message : "Authentication failed");
         }
@@ -115,8 +174,18 @@ export const authOptions: NextAuthOptions = {
     error: "/login",
   },
   callbacks: {
-    async signIn({ user }) {
-      return Boolean(user.email);
+    async signIn({ user, account }) {
+      if (!user.email) {
+        return false;
+      }
+
+      const isOAuth = account?.provider === "google" || account?.provider === "github";
+      if (!isOAuth) {
+        return true;
+      }
+
+      const synced = await syncUserWithApi(user.email, user.name, user.image);
+      return synced !== null;
     },
     async jwt({ token, user, trigger, session }) {
       if (user?.email) {
@@ -124,10 +193,15 @@ export const authOptions: NextAuthOptions = {
         token.name = user.name ?? undefined;
         token.picture = user.image ?? undefined;
 
-        try {
-          await syncUser(user.email, user.name);
-        } catch {
-          // Non-blocking: user sync retries on /me during onboarding.
+        if (user.id) {
+          token.sub = user.id;
+        } else {
+          const synced = await syncUserWithApi(user.email, user.name, user.image);
+          if (synced) {
+            token.sub = synced.id;
+            if (synced.full_name) token.name = synced.full_name;
+            if (synced.avatar_url) token.picture = synced.avatar_url;
+          }
         }
       }
 
@@ -154,7 +228,7 @@ export const authOptions: NextAuthOptions = {
       if (url.startsWith(baseUrl)) {
         return url;
       }
-      return `${baseUrl}/`;
+      return `${baseUrl}/onboarding`;
     },
   },
   secret: process.env.NEXTAUTH_SECRET,

@@ -2,6 +2,11 @@ import { Suspense } from "react";
 
 import { LoginForm } from "@/components/auth/login-form";
 
+const oauthProviders = {
+  google: Boolean(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET),
+  github: Boolean(process.env.GITHUB_CLIENT_ID && process.env.GITHUB_CLIENT_SECRET),
+};
+
 export default function LoginPage() {
   return (
     <div className="relative flex min-h-screen items-center justify-center overflow-hidden bg-[#020202] px-4 py-10">
@@ -42,7 +47,7 @@ export default function LoginPage() {
               <div className="h-10 w-full animate-pulse rounded-lg bg-surface-2" />
             </div>
           }>
-            <LoginForm />
+            <LoginForm oauthProviders={oauthProviders} />
           </Suspense>
           </div>
         </div>

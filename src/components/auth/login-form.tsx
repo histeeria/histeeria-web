@@ -59,11 +59,33 @@ const primaryButtonClass =
 const infoClass = "rounded-[10px] border border-[#2a3261] bg-[#151b33] px-3 py-2 text-center text-[12px] text-[#c7ceff]";
 const errorClass = "rounded-[10px] border border-red-900/40 bg-red-950/20 px-3 py-2 text-center text-[12px] text-red-300";
 
-export function LoginForm() {
+function authErrorMessage(code: string | null): string | null {
+  if (!code) return null;
+  switch (code) {
+    case "OAuthAccountNotLinked":
+      return "This email is already registered with a password. Sign in with email or reset your password.";
+    case "OAuthSignin":
+    case "OAuthCallback":
+      return "Google sign-in failed. Try again or use email instead.";
+    case "Configuration":
+      return "Social sign-in is not configured. Use email to continue.";
+    case "AccessDenied":
+      return "Sign-in was cancelled or denied.";
+    default:
+      return "Authentication failed. Please try again.";
+  }
+}
+
+type OAuthProviders = {
+  google: boolean;
+  github: boolean;
+};
+
+export function LoginForm({ oauthProviders }: { oauthProviders?: OAuthProviders }) {
   const searchParams = useSearchParams();
   const { update: updateSession } = useSession();
   const callbackUrl = searchParams.get("callbackUrl") ?? "/onboarding";
-  const initialError = searchParams.get("error");
+  const initialError = authErrorMessage(searchParams.get("error"));
 
   const [state, setState] = useState<AuthState>("signin");
   const [email, setEmail] = useState("");
@@ -78,10 +100,12 @@ export function LoginForm() {
   const [showPassword, setShowPassword] = useState(false);
   const [loading, setLoading] = useState(false);
   const [loadingProvider, setLoadingProvider] = useState<string | null>(null);
-  const [error, setError] = useState<string | null>(initialError ? "Authentication failed." : null);
+  const [error, setError] = useState<string | null>(initialError);
   const [info, setInfo] = useState<string | null>(null);
   const avatarInputRef = useRef<HTMLInputElement>(null);
   const isBusy = loading || Boolean(loadingProvider);
+  const hasSocialAuth =
+    (oauthProviders?.google ?? true) || (oauthProviders?.github ?? true);
 
   const API_URL = process.env.NEXT_PUBLIC_API_URL ?? "https://api.histeeria.com";
 
@@ -327,44 +351,55 @@ export function LoginForm() {
   }
 
   function SocialButtons() {
+    const showGoogle = oauthProviders?.google !== false;
+    const showGithub = oauthProviders?.github !== false;
+
+    if (!showGoogle && !showGithub) {
+      return null;
+    }
+
     return (
       <div className="grid gap-2.5">
-        <Button
-          type="button"
-          variant="secondary"
-          className={socialButtonClass}
-          disabled={isBusy}
-          onClick={() => void handleSocialSignIn("google")}
-        >
-          <span className="flex items-center gap-2.5">
-            {loadingProvider === "google" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <GoogleIcon />
-            )}
-            <span className="text-[13px] font-medium">
-              {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
+        {showGoogle && (
+          <Button
+            type="button"
+            variant="secondary"
+            className={socialButtonClass}
+            disabled={isBusy}
+            onClick={() => void handleSocialSignIn("google")}
+          >
+            <span className="flex items-center gap-2.5">
+              {loadingProvider === "google" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <GoogleIcon />
+              )}
+              <span className="text-[13px] font-medium">
+                {loadingProvider === "google" ? "Connecting..." : "Continue with Google"}
+              </span>
             </span>
-          </span>
-        </Button>
-        <Button
-          type="button"
-          variant="secondary"
-          className={socialButtonClass}
-          disabled={isBusy}
-          onClick={() => void handleSocialSignIn("github")}
-        >
-          <span className="flex items-center gap-2.5">
-            {loadingProvider === "github" ? (
-              <Loader2 className="h-3.5 w-3.5 animate-spin" />
-            ) : (
-              <GitHubIcon />
-            )}
-            <span className="text-[13px] font-medium">
-              {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
+          </Button>
+        )}
+        {showGithub && (
+          <Button
+            type="button"
+            variant="secondary"
+            className={socialButtonClass}
+            disabled={isBusy}
+            onClick={() => void handleSocialSignIn("github")}
+          >
+            <span className="flex items-center gap-2.5">
+              {loadingProvider === "github" ? (
+                <Loader2 className="h-3.5 w-3.5 animate-spin" />
+              ) : (
+                <GitHubIcon />
+              )}
+              <span className="text-[13px] font-medium">
+                {loadingProvider === "github" ? "Connecting..." : "Continue with GitHub"}
+              </span>
             </span>
-          </span>
-        </Button>
+          </Button>
+        )}
       </div>
     );
   }
@@ -414,13 +449,13 @@ export function LoginForm() {
 
             <SocialButtons />
 
-           
-
+            {hasSocialAuth && (
             <div className="relative flex items-center justify-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />
               <span className="mx-4 flex-shrink text-[11px] uppercase tracking-[0.2em] text-[#52525b]">or</span>
               <div className="flex-grow border-t border-[#27272a]" />
             </div>
+            )}
 
             <form onSubmit={(e) => void handleEmailSignIn(e)} className="space-y-4">
               <div className="space-y-1.5">
@@ -508,11 +543,13 @@ export function LoginForm() {
 
             <SocialButtons />
 
+            {hasSocialAuth && (
             <div className="relative flex items-center justify-center py-2">
               <div className="flex-grow border-t border-[#27272a]" />
               <span className="mx-4 flex-shrink text-[11px] uppercase tracking-[0.2em] text-[#52525b]">or</span>
               <div className="flex-grow border-t border-[#27272a]" />
             </div>
+            )}
 
             <form onSubmit={(e) => void handleSendOTP(e)} className="space-y-4">
               <div className="space-y-1.5">

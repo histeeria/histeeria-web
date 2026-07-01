@@ -142,10 +142,14 @@ async function apiFetch<T>(
   return response.json() as Promise<T>;
 }
 
-export async function syncUser(email: string, full_name?: string | null) {
+export async function syncUser(
+  email: string,
+  full_name?: string | null,
+  avatar_url?: string | null,
+) {
   return apiFetch<MeResponse["user"]>("/v1/auth/sync", {
     method: "POST",
-    body: JSON.stringify({ email, full_name }),
+    body: JSON.stringify({ email, full_name, avatar_url }),
   });
 }
 
