@@ -26,8 +26,33 @@ export const authOptions: NextAuthOptions = {
         fullName: { type: "text" },
         avatarUrl: { type: "text" },
         code: { type: "text" },
+        sudoToken: { type: "text" },
       },
       async authorize(credentials) {
+        if (credentials?.sudoToken) {
+          const res = await fetch(`${API_URL}/v1/auth/sudo/consume`, {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ token: credentials.sudoToken }),
+          });
+          if (!res.ok) {
+            const err = (await res.json()) as { detail?: string };
+            throw new Error(err.detail || "Sudo session expired");
+          }
+          const user = (await res.json()) as {
+            id: string;
+            email: string;
+            full_name: string | null;
+            avatar_url: string | null;
+          };
+          return {
+            id: user.id,
+            email: user.email,
+            name: user.full_name ?? undefined,
+            image: user.avatar_url ?? undefined,
+          };
+        }
+
         if (!credentials?.email) return null;
 
         try {
