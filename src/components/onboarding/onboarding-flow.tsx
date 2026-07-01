@@ -7,7 +7,7 @@ import { useSession } from "next-auth/react";
 import { useEffect, useMemo, useRef, useState } from "react";
 import { Link2, Check } from "lucide-react";
 
-import { checkWorkspaceSlug, completeOnboarding, DOMAINS, type OnboardingPayload } from "@/lib/api";
+import { DOMAINS, type OnboardingPayload } from "@/lib/api";
 import { cn } from "@/lib/utils";
 
 type FormState = {
@@ -175,24 +175,30 @@ export function OnboardingFlow() {
     const slug = form.workspace_slug.trim() || slugify(form.workspace_name.trim() || workspacePlaceholder);
 
     setCheckingSlug(true);
+    setSubmitError(null);
     try {
-      const tokenResponse = await fetch("/api/session-token");
-      if (!tokenResponse.ok) {
-        throw new Error("Unable to authenticate request");
-      }
-      const { token } = (await tokenResponse.json()) as { token: string };
-      const result = await checkWorkspaceSlug(token, slug);
+      const response = await fetch(`/api/check-slug?slug=${encodeURIComponent(slug)}`);
+      const body = (await response.json().catch(() => ({}))) as {
+        available?: boolean;
+        slug?: string;
+        reason?: string | null;
+        error?: string;
+      };
 
-      if (!result.available) {
+      if (!response.ok) {
+        throw new Error(body.error ?? "Unable to verify workspace slug");
+      }
+
+      if (!body.available) {
         setErrors((current) => ({
           ...current,
-          workspace_slug: result.reason ?? "Workspace slug is already taken.",
+          workspace_slug: body.reason ?? "Workspace slug is already taken.",
         }));
         return false;
       }
 
-      if (result.slug !== form.workspace_slug) {
-        setForm((current) => ({ ...current, workspace_slug: result.slug }));
+      if (body.slug && body.slug !== form.workspace_slug) {
+        setForm((current) => ({ ...current, workspace_slug: body.slug! }));
       }
 
       return true;
@@ -225,12 +231,6 @@ export function OnboardingFlow() {
     setSubmitError(null);
 
     try {
-      const tokenResponse = await fetch("/api/session-token");
-      if (!tokenResponse.ok) {
-        throw new Error("Unable to authenticate request");
-      }
-      const { token } = (await tokenResponse.json()) as { token: string };
-
       const payload: OnboardingPayload = {
         workspace_name: form.workspace_name.trim() || workspacePlaceholder,
         workspace_slug: form.workspace_slug.trim() || slugify(form.workspace_name || workspacePlaceholder),
@@ -244,9 +244,23 @@ export function OnboardingFlow() {
         heard_from: form.heard_from?.trim() || undefined,
       };
 
-      const result = await completeOnboarding(token, payload);
-      if (result.api_key) {
-        setApiKey(result.api_key);
+      const response = await fetch("/api/onboarding", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(payload),
+      });
+
+      const body = (await response.json().catch(() => ({}))) as {
+        api_key?: string | null;
+        error?: string;
+      };
+
+      if (!response.ok) {
+        throw new Error(body.error ?? "Something went wrong");
+      }
+
+      if (body.api_key) {
+        setApiKey(body.api_key);
       }
       await update();
       setCompletionSlug(payload.workspace_slug);
